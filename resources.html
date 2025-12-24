@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources - Hope Project</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/cat.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        /* Base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Merriweather', serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Navigation - Changed to Merriweather */
+        .main-nav {
+            background-color: #CBB0FF;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            font-family: 'Merriweather', serif; /* Changed to Merriweather */
+            font-size: 0.9rem; /* Adjusted size for better readability */
+            font-weight: 700;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: #b495f0;
+        }
+        
+        /* Page Header - Changed to Merriweather */
+        .page-header {
+            text-align: center;
+            margin: 3rem 0 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .page-header h1 {
+            font-size: 2.8rem;
+            color: #CBB0FF;
+            margin-bottom: 0.5rem;
+            font-family: 'Merriweather', serif; /* Changed to Merriweather */
+            font-weight: 700;
+        }
+        
+        .page-header p {
+            font-size: 1.3rem;
+            color: #777;
+            margin-top: 1.5rem;
+        }
+        
+        /* Filter Section - Changed to Merriweather */
+        .filter-section {
+            background: white;
+            padding: 1.8rem;
+            border-radius: 15px;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filter-section h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1.2rem;
+            color: #FFC0CB;
+            font-family: 'Merriweather', serif; /* Changed to Merriweather */
+            font-weight: 700;
+        }
+        
+        .tag-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        
+        .tag-filter {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 20px;
+            background: #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Merriweather', serif;
+            font-size: 0.9rem;
+        }
+        
+        .tag-filter:hover {
+            background: #e0e0e0;
+        }
+        
+        .tag-filter.active {
+            background: #CBB0FF;
+            color: white;
+        }
+        
+        /* Helpline Section - Changed to Merriweather */
+        .helpline-section {
+            background: white;
+            padding: 1.8rem;
+            border-radius: 15px;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .helpline-section h2 {
+            font-size: 1.4rem;
+            margin-bottom: 1.2rem;
+            color: #FFC0CB;
+            font-family: 'Merriweather', serif; /* Changed to Merriweather */
+            font-weight: 700;
+        }
+        
+        .helpline-search {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        #country-search {
+            flex: 1;
+            padding: 0.9rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Merriweather', serif;
+            font-size: 1rem;
+        }
+        
+        #search-helpline {
+            padding: 0.9rem 1.6rem;
+            background: #CBB0FF; /* Updated to #CBB0FF */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-family: 'Merriweather', serif;
+            font-weight: bold;
+        }
+        
+        #search-helpline:hover {
+            background: #b495f0; /* Darker shade of #CBB0FF */
+        }
+        
+        .helpline-results {
+            padding: 1.2rem;
+            border-radius: 8px;
+            background: #f9f9f9;
+            min-height: 50px;
+            font-family: 'Merriweather', serif;
+        }
+        
+        /* Resources Grid */
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2.2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .resource-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.8rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 5px solid #CBB0FF; /* Updated to #CBB0FF */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .resource-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .resource-icon {
+            font-size: 2.8rem;
+            margin-bottom: 1.2rem;
+            text-align: center;
+        }
+        
+        .resource-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: #555;
+            font-family: 'Merriweather', serif;
+            font-weight: 700;
+        }
+        
+        .resource-card p {
+            color: #777;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            flex-grow: 1;
+            font-size: 1rem;
+        }
+        
+        .resource-link {
+            display: inline-block;
+            padding: 0.7rem 1.2rem;
+            background: #FFC0CB;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+            text-align: center;
+            font-family: 'Merriweather', serif;
+            font-weight: bold;
+        }
+        
+        .resource-link:hover {
+            background: #ffa7b6;
+        }
+        
+        /* Add Resource Button - Changed to Merriweather */
+        .add-resource-section {
+            text-align: center;
+            margin: 3rem 0;
+        }
+        
+        #add-resource-btn {
+            padding: 1rem 2rem;
+            background: #CBB0FF; /* Updated to #CBB0FF */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-family: 'Merriweather', serif; /* Changed to Merriweather */
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        
+        #add-resource-btn:hover {
+            background: #b495f0; /* Darker shade of #CBB0FF */
+        }
+        
+        /* Article Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2.5rem;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            font-family: 'Merriweather', serif;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close-modal:hover {
+            color: #333;
+        }
+        
+        .article-content h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #CBB0FF; /* Updated to #CBB0FF */
+            font-family: 'Merriweather', serif;
+            font-weight: 700;
+        }
+        
+        .article-content p {
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        
+        /* Add Resource Form */
+        #resource-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Merriweather', serif;
+        }
+        
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .tag-selectors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .tag-selector {
+            padding: 0.4rem 0.8rem;
+            background: #f0f0f0;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .tag-selector.selected {
+            background: #CBB0FF; /* Updated to #CBB0FF */
+            color: white;
+        }
+        
+        .form-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .form-buttons button {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Merriweather', serif;
+            font-weight: bold;
+        }
+        
+        #submit-resource {
+            background: #CBB0FF; /* Updated to #CBB0FF */
+            color: white;
+        }
+        
+        #submit-resource:hover {
+            background: #b495f0; /* Darker shade of #CBB0FF */
+        }
+        
+        #cancel-resource {
+            background: #f0f0f0;
+            color: #555;
+        }
+        
+        /* Cat mascot */
+        .cat-mascot {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+        }
+        
+        .cat-mascot img {
+            width: 80px;
+            height: auto;
+        }
+        
+        .speech-bubble {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            width: 200px;
+            background: white;
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 0.5rem;
+            display: none;
+        }
+        
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            right: 20px;
+            border-width: 10px;
+            border-style: solid;
+            border-color: white transparent transparent transparent;
+        }
+        
+        .close-bubble {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-nav {
+                flex-wrap: wrap;
+            }
+            
+            .nav-link {
+                margin: 0.3rem;
+                font-size: 0.8rem;
+            }
+            
+            .page-header h1 {
+                font-size: 2rem;
+            }
+            
+            .page-header p {
+                font-size: 1.1rem;
+            }
+            
+            .tag-filters {
+                gap: 0.5rem;
+            }
+            
+            .tag-filter {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .helpline-search {
+                flex-direction: column;
+            }
+            
+            .resources-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+            
+            #add-resource-btn {
+                padding: 0.8rem 1.5rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="resources.html" class="nav-link active">Resources</a>
+        <a href="boards.html" class="nav-link">Boards</a>
+        <a href="letters.html" class="nav-link">Letters</a>
+        <a href="about.html" class="nav-link">About</a>
+    </nav>
+    
+    <div class="container">
+        <header class="page-header">
+            <h1>Resources</h1>
+            <p>Helpful mental health resources and information</p>
+        </header>
+        
+        <div class="resources-content">
+            <!-- Filter System -->
+            <div class="filter-section">
+                <h2>Filter Resources</h2>
+                <div class="tag-filters">
+                    <button class="tag-filter active" data-tag="all">All</button>
+                    <button class="tag-filter" data-tag="stress">Stress</button>
+                    <button class="tag-filter" data-tag="self-care">Self-Care</button>
+                    <button class="tag-filter" data-tag="friendship">Friendship</button>
+                    <button class="tag-filter" data-tag="school">School</button>
+                    <button class="tag-filter" data-tag="anxiety">Anxiety</button>
+                    <button class="tag-filter" data-tag="work">Work</button>
+                    <button class="tag-filter" data-tag="family">Family</button>
+                    <button class="tag-filter" data-tag="crisis">Crisis</button>
+                </div>
+            </div>
+            
+            <!-- Helpline Search -->
+            <div class="helpline-section">
+                <h2>Find a Helpline</h2>
+                <div class="helpline-search">
+                    <input type="text" id="country-search" placeholder="Enter your country">
+                    <button id="search-helpline">Search</button>
+                </div>
+                <div id="helpline-results" class="helpline-results"></div>
+            </div>
+            
+            <!-- Resources Grid -->
+            <div class="resources-grid">
+                <div class="resource-card" data-tags="stress,self-care">
+                    <div class="resource-icon">🧘</div>
+                    <h3>Mindful Breathing</h3>
+                    <p>Simple breathing techniques to reduce stress and anxiety in minutes.</p>
+                    <a href="#" class="resource-link" data-article="mindful-breathing">Learn more</a>
+                </div>
+                
+                <div class="resource-card" data-tags="school,stress">
+                    <div class="resource-icon">📚</div>
+                    <h3>Study Strategies</h3>
+                    <p>Effective ways to manage schoolwork without getting overwhelmed.</p>
+                    <a href="#" class="resource-link" data-article="study-strategies">Learn more</a>
+                </div>
+                
+                <div class="resource-card" data-tags="friendship,self-care">
+                    <div class="resource-icon">👥</div>
+                    <h3>Healthy Relationships</h3>
+                    <p>Tips for building and maintaining positive friendships.</p>
+                    <a href="#" class="resource-link" data-article="healthy-relationships">Learn more</a>
+                </div>
+                
+                <div class="resource-card" data-tags="anxiety,self-care">
+                    <div class="resource-icon">🌱</div>
+                    <h3>Grounding Techniques</h3>
+                    <p>Methods to stay present when feeling anxious or overwhelmed.</p>
+                    <a href="#" class="resource-link" data-article="grounding-techniques">Learn more</a>
+                </div>
+                
+                <div class="resource-card" data-tags="stress,school">
+                    <div class="resource-icon">⏰</div>
+                    <h3>Time Management</h3>
+                    <p>How to balance school, activities, and personal time effectively.</p>
+                    <a href="#" class="resource-link" data-article="time-management">Learn more</a>
+                </div>
+                
+                <div class="resource-card" data-tags="self-care">
+                    <div class="resource-icon">💤</div>
+                    <h3>Sleep Hygiene</h3>
+                    <p>Improve your sleep quality for better mental health.</p>
+                    <a href="#" class="resource-link" data-article="sleep-hygiene">Learn more</a>
+                </div>
+                
+                <div class="resource-card" data-tags="work,stress">
+                    <div class="resource-icon">💼</div>
+                    <h3>Workplace Stress</h3>
+                    <p>Managing stress and maintaining mental health in the workplace.</p>
+                    <a href="#" class="resource-link" data-article="workplace-stress">Learn more</a>
+                </div>
+                
+                <div class="resource-card" data-tags="family,self-care">
+                    <div class="resource-icon">🏠</div>
+                    <h3>Family Dynamics</h3>
+                    <p>Navigating family relationships and setting healthy boundaries.</p>
+                    <a href="#" class="resource-link" data-article="family-dynamics">Learn more</a>
+                </div>
+            </div>
+            
+            <!-- Add Resource Button -->
+            <div class="add-resource-section">
+                <button id="add-resource-btn">+ ADD RESOURCE</button>
+            </div>
+            
+            <!-- Add Resource Form (initially hidden) -->
+            <div id="resource-form">
+                <h2>Add New Resource</h2>
+                <form id="new-resource-form">
+                    <div class="form-group">
+                        <label for="resource-title">Title</label>
+                        <input type="text" id="resource-title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resource-description">Description</label>
+                        <textarea id="resource-description" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resource-content">Article Content</label>
+                        <textarea id="resource-content" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Tags (select at least one)</label>
+                        <div class="tag-selectors">
+                            <span class="tag-selector" data-tag="stress">Stress</span>
+                            <span class="tag-selector" data-tag="self-care">Self-Care</span>
+                            <span class="tag-selector" data-tag="friendship">Friendship</span>
+                            <span class="tag-selector" data-tag="school">School</span>
+                            <span class="tag-selector" data-tag="anxiety">Anxiety</span>
+                            <span class="tag-selector" data-tag="work">Work</span>
+                            <span class="tag-selector" data-tag="family">Family</span>
+                            <span class="tag-selector" data-tag="crisis">Crisis</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="button" id="cancel-resource">Cancel</button>
+                        <button type="submit" id="submit-resource">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Article Modal -->
+    <div id="article-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="article-content">
+                <h2 id="article-title"></h2>
+                <div id="article-body"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cat mascot -->
+    <div class="cat-mascot">
+        <img src="images/cat.png" alt="Helper Cat">
+        <div class="speech-bubble">
+            <span class="close-bubble">×</span>
+            <p>Remember, you are not alone. These resources are here to support you.</p>
+        </div>
+    </div>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+<script src="js/resources.js"></script>
+</body>
+</html>

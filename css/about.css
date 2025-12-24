@@ -1,0 +1,324 @@
+/* About Page Styles */
+.about-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    font-family: 'Merriweather', serif; /* Updated to Merriweather */
+}
+
+/* Page Header */
+.page-header {
+    text-align: center;
+    margin-top: 30px;
+    font-family: 'Merriweather', serif; /* Updated to Merriweather */
+}
+
+.page-header h1 {
+    font-size: 4rem;
+    color: #CBB0FF; /* Updated to #CBB0FF */
+    margin-bottom: 0.5rem;
+}
+
+.page-header p {
+    font-size: 1.5rem;
+    color: #5BA8D1;
+}
+
+/* Mission Section */
+.mission-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3rem;
+}
+
+.mission-section h2 {
+    color: #CBB0FF; /* Updated to #CBB0FF */
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.mission-statement {
+    line-height: 1.8;
+    color: #333;
+}
+
+.mission-statement p {
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+
+.mission-values {
+    list-style: none;
+    margin: 2rem 0;
+}
+
+.mission-values li {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(203, 176, 255, 0.1); /* Updated to #CBB0FF with opacity */
+    border-radius: 12px;
+}
+
+.value-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+/* Mission section hearts */
+.mission-values li:nth-child(1) .value-icon::before {
+    content: "☆";
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.mission-values li:nth-child(2) .value-icon::before {
+    content: "☆";
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.mission-values li:nth-child(3) .value-icon::before {
+    content: "☆";
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.value-text h3 {
+    color: #CBB0FF; /* Updated to #CBB0FF */
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.value-text p {
+    color: #555;
+    line-height: 1.6;
+    font-size: 1.3rem;
+}
+
+.closing-statement {
+    font-style: italic;
+    text-align: center;
+    padding: 1.5rem;
+    background: rgba(91, 168, 209, 0.1);
+    border-radius: 12px;
+    margin-top: 2rem;
+    font-size: 1.3rem;
+}
+
+/* Team Section */
+.team-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3rem;
+}
+
+.team-section h2 {
+    color: #5BA8D1;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.story-content {
+    display: block; /* Changed from grid to block since image is removed */
+}
+
+.story-text {
+    line-height: 1.8;
+    color: #333;
+}
+
+.story-text p {
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+}
+
+/* Values Section */
+.values-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3rem;
+}
+
+.values-section h2 {
+    color: #CBB0FF; /* Updated to #CBB0FF */
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.values-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.value-card {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: #f9f9f9;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.value-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.value-card .value-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Specific emojis for each value */
+.value-card:nth-child(1) .value-icon::before {
+    content: "✍️"; /* Purpose */
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.value-card:nth-child(2) .value-icon::before {
+    content: "💌"; /* Community */
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.value-card:nth-child(3) .value-icon::before {
+    content: "🌱"; /* Empowerment */
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.value-card h3 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.value-card p {
+    color: #555;
+    line-height: 1.6;
+    font-size: 1.3rem;
+}
+
+/* Contact Section */
+.contact-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 3rem;
+}
+
+.contact-section h2 {
+    color: #5BA8D1;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.contact-content {
+    text-align: center;
+    line-height: 1.8;
+    color: #333;
+}
+
+.contact-content p {
+    margin-bottom: 2rem;
+    font-size: 1.3rem;
+}
+
+.contact-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.contact-method {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #f9f9f9;
+    border-radius: 12px;
+}
+
+.contact-method:nth-child(1) .contact-icon::before {
+    content: "💌"; /* Email */
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.contact-method:nth-child(2) .contact-icon::before {
+    content: "📩"; /* Feedback */
+    color: #CBB0FF; /* Updated to #CBB0FF */
+}
+
+.contact-icon {
+    font-size: 2rem;
+}
+
+.contact-details h3 {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.contact-details p {
+    color: #555;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .mission-values li {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .contact-method {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .values-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .contact-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .page-header h1 {
+        font-size: 3rem;
+    }
+}
+/* Navigation - FIXED */
+.main-nav {
+    background-color: #CBB0FF;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    font-family: 'Merriweather', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background-color: #b495f0;
+}

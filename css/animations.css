@@ -1,0 +1,142 @@
+/* Twinkling stars animation */
+@keyframes twinkle {
+    0% { opacity: 0.2; }
+    50% { opacity: 1; }
+    100% { opacity: 0.2; }
+}
+
+.twinkling-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 3s infinite;
+}
+
+/* Floating elements animation */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.floating {
+    animation: float 5s ease-in-out infinite;
+}
+
+.category-card {
+    animation: float 6s ease-in-out infinite;
+}
+
+/* Hover effects */
+.category-card:hover {
+    animation: none; /* Stop float animation on hover */
+}
+
+/* Pastel gradient backgrounds */
+.pastel-gradient-pink {
+    background: linear-gradient(135deg, #E6E6FA, #FFC0CB);
+}
+
+.pastel-gradient-blue {
+    background: linear-gradient(135deg, #A0D8EF, #E6E6FA);
+}
+
+.pastel-gradient-yellow {
+    background: linear-gradient(135deg, #FFFACD, #A0D8EF);
+}
+/* Additional animations for all pages */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.8s ease forwards;
+}
+
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.4s; }
+.delay-3 { animation-delay: 0.6s; }
+
+/* Hover effects for all interactive elements */
+.category-card,
+.resource-card,
+.letter-card,
+.board-card,
+.value-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+}
+
+.category-card:hover,
+.resource-card:hover,
+.letter-card:hover,
+.board-card:hover,
+.value-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Pulse animation for call-to-action buttons */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+.submit-btn:hover,
+.primary-btn:hover {
+    animation: pulse 1s;
+}
+
+/* Floating animation for cat mascot */
+@keyframes floatCat {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.cat-mascot img {
+    animation: floatCat 6s ease-in-out infinite;
+}
+
+/* Twinkling stars for background */
+.star {
+    position: fixed;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 4s infinite;
+    z-index: -1;
+}
+
+/* Generate random stars */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    background-image: 
+        radial-gradient(2px 2px at 20px 30px, #FFFACD, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 40px 70px, #A0D8EF, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 90px 40px, #FFC0CB, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 120px 80px, #E6E6FA, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 160px 30px, #FFFACD, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 200px 70px, #A0D8EF, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 240px 40px, #FFC0CB, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 280px 80px, #E6E6FA, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 320px 30px, #FFFACD, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 360px 70px, #A0D8EF, rgba(0,0,0,0));
+    animation: twinkleBackground 20s linear infinite;
+}
+
+@keyframes twinkleBackground {
+    from { transform: translateY(0px); }
+    to { transform: translateY(-100px); }
+}

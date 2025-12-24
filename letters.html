@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anonymous Letters - Hope Project</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/letters.css">
+     <link rel="stylesheet" href="css/cat.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="resources.html" class="nav-link">Resources</a>
+        <a href="boards.html" class="nav-link">Boards</a>
+        <a href="letters.html" class="nav-link active">Letters</a>
+        <a href="about.html" class="nav-link">About</a>
+    </nav>
+    
+    <div class="container">
+        <header class="page-header">
+            <h1>Anonymous Letters</h1>
+            <p>Share encouragement and read messages from others</p>
+        </header>
+        
+        <div class="letters-content">
+            <!-- Letter Submission Form -->
+            <div class="letter-form-section">
+                <h2>Write an Anonymous Letter</h2>
+                <form id="letter-form">
+                    <div class="form-group">
+                        <label for="recipient">To / For (optional):</label>
+                        <input type="text" id="recipient" placeholder="E.g., Someone struggling with exams">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category">Category (optional):</label>
+                        <select id="category">
+                            <option value="">Select a category</option>
+                            <option value="encouragement">Encouragement</option>
+                            <option value="friendship">Friendship</option>
+                            <option value="hope">Hope</option>
+                            <option value="self-care">Self-Care</option>
+                            <option value="school">School</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="letter-color">Letter Color:</label>
+                        <input type="color" id="letter-color" value="#CBB0FF">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="message">Your Message:</label>
+                        <textarea id="message" placeholder="Write your message of hope and encouragement..." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-plus"></i> Add Letter
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Letters Feed -->
+            <div class="letters-feed-section">
+                <div class="feed-header">
+                    <h2>Letters of Hope</h2>
+                    
+                    <div class="search-box">
+                        <input type="text" id="letter-search" placeholder="Search letters...">
+                        <button id="search-btn">🔍</button>
+                    </div>
+                </div>
+                
+                <div class="letters-feed" id="letters-feed">
+                    <!-- Letters will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+        
+      <!-- Cat Mascot -->
+        <div class="cat-mascot">
+            <img src="images/cat.png" alt="Helper Cat">
+            <div class="speech-bubble">
+                <span class="close-bubble">×</span>
+                <p>Your words can brighten someone's day. Share kindness with others</p>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+        <!-- Load script.js first for cat functionality -->
+<script src="js/script.js"></script>
+<!-- Load API service -->
+<script src="js/api.js"></script>
+<!-- Then load letters.js for page-specific functionality -->
+<script src="js/letters.js"></script>
+</body>
+</html>

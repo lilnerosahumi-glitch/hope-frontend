@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boards - Hope Project</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/boards.css">
+    <link rel="stylesheet" href="css/cat.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="resources.html" class="nav-link">Resources</a>
+        <a href="boards.html" class="nav-link active">Boards</a>
+        <a href="letters.html" class="nav-link">Letters</a>
+        <a href="about.html" class="nav-link">About</a>
+        <div class="user-info">
+            <span id="username-display"></span>
+            <button id="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <h1>Inspiration Boards</h1>
+            <p>Create and share boards with images, music, and stickers</p>
+        </header>
+
+        <!-- Tabs for Public/My Boards -->
+        <div class="boards-tabs">
+            <button class="tab-btn active" data-tab="public">Public Boards</button>
+            <button class="tab-btn" data-tab="my-boards">My Boards</button>
+        </div>
+
+        <!-- Public Boards Section -->
+        <div id="public-boards-section">
+            <div class="boards-header">
+                <h2>Community Inspiration</h2>
+                <button id="create-board-btn" class="primary-btn">
+                    <i class="fas fa-plus"></i> Create New Board
+                </button>
+            </div>
+            <div class="boards-grid" id="public-boards-grid">
+                <!-- Public boards will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- My Boards Section (shown after login) -->
+        <div id="my-boards-section" class="hidden">
+            <div class="boards-header">
+                <h2>Your Boards</h2>
+                <button id="create-my-board-btn" class="primary-btn">
+                    <i class="fas fa-plus"></i> Create New Board
+                </button>
+            </div>
+            <div class="boards-grid" id="my-boards-grid">
+                <!-- User's boards will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Board Editor (shown when a board is opened) -->
+        <div id="board-editor" class="hidden">
+            <div class="editor-header">
+                <h2 id="board-title">Board Title</h2>
+                <div class="editor-actions">
+                    <button id="save-board-btn" class="primary-btn">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button id="back-to-boards-btn">
+                        <i class="fas fa-arrow-left"></i> Back to Boards
+                    </button>
+                    <div class="visibility-toggle">
+                        <label for="board-visibility">Visibility:</label>
+                        <select id="board-visibility">
+                            <option value="private">Private</option>
+                            <option value="public">Public</option>
+                        </select>
+                    </div>
+                    <div id="share-section" class="hidden">
+                        <input type="text" id="share-link" readonly>
+                        <button id="copy-link-btn">Copy Link</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Toolbar -->
+            <div class="enhanced-toolbar">
+                <div class="toolbar-section">
+                    <span class="toolbar-label">Font:</span>
+                    <select id="font-family" class="toolbar-select">
+                        <option value="Merriweather">Merriweather</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Verdana">Verdana</option>
+                    </select>
+                </div>
+                <div class="toolbar-section">
+                    <span class="toolbar-label">Size:</span>
+                    <input type="number" id="font-size" class="toolbar-input" value="16" min="8" max="72">
+                </div>
+                <div class="toolbar-section">
+                    <span class="toolbar-label">Color:</span>
+                    <input type="color" id="font-color" class="color-picker" value="#000000">
+                </div>
+                <div class="toolbar-section">
+                    <button id="bold-btn" class="tool-btn"><i class="fas fa-bold"></i></button>
+                    <button id="italic-btn" class="tool-btn"><i class="fas fa-italic"></i></button>
+                    <button id="underline-btn" class="tool-btn"><i class="fas fa-underline"></i></button>
+                </div>
+                <div class="toolbar-section">
+                    <button id="align-left-btn" class="tool-btn"><i class="fas fa-align-left"></i></button>
+                    <button id="align-center-btn" class="tool-btn"><i class="fas fa-align-center"></i></button>
+                    <button id="align-right-btn" class="tool-btn"><i class="fas fa-align-right"></i></button>
+                </div>
+                <!-- NEW: Text background color picker -->
+                <div class="toolbar-section">
+                    <span class="toolbar-label">Text BG:</span>
+                    <input type="color" id="text-bg-color" class="color-picker" value="#ffffff">
+                </div>
+            </div>
+
+            <div class="editor-tools">
+                <div class="tools-section">
+                    <h3>Add to Board</h3>
+                    <div class="tool-buttons">
+                        <button class="tool-btn" data-type="image">
+                            <i class="fas fa-image"></i> Image
+                        </button>
+                        <button class="tool-btn" data-type="gif">
+                            <i class="fas fa-film"></i> GIF
+                        </button>
+                        <button class="tool-btn" data-type="sticker">
+                            <i class="fas fa-star"></i> Sticker
+                        </button>
+                        <button class="tool-btn" data-type="text">
+                            <i class="fas fa-font"></i> Text
+                        </button>
+                        <button class="tool-btn" data-type="music">
+                            <i class="fas fa-music"></i> Music
+                        </button>
+                        <button class="tool-btn" data-type="shape">
+                            <i class="fas fa-square"></i> Shape
+                        </button>
+                    </div>
+                </div>
+                <div class="tools-section">
+                    <h3>Upload</h3>
+                    <input type="file" id="image-upload" accept="image/*" class="hidden">
+                    <label for="image-upload" class="tool-btn">
+                        <i class="fas fa-upload"></i> Choose Image
+                    </label>
+                    <input type="file" id="gif-upload" accept="image/gif" class="hidden">
+                    <label for="gif-upload" class="tool-btn">
+                        <i class="fas fa-upload"></i> Choose GIF
+                    </label>
+                </div>
+                <div class="tools-section">
+                    <h3>Background</h3>
+                    <input type="color" id="background-color" value="#f9f9f9">
+                    <button id="apply-bg-color" class="tool-btn">Apply</button>
+                </div>
+            </div>
+
+            <div class="board-canvas-container">
+                <div class="board-canvas" id="board-canvas">
+                    <!-- Draggable elements will be placed here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Login prompt (shown when not logged in) -->
+        <div id="login-prompt" class="login-prompt hidden">
+            <div class="prompt-content">
+                <h2>Login Required</h2>
+                <p>Please log in to create and view your inspiration boards</p>
+                <div style="text-align: center; width: 100%;">
+                    <button id="login-prompt-btn" class="primary-btn">Login / Register</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cat mascot -->
+        <div class="cat-mascot">
+            <img src="images/cat.png" alt="Helper Cat">
+            <div class="speech-bubble">
+                <span class="close-bubble">×</span>
+                <p>Try dragging elements to create your perfect inspiration board!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal - Redesigned -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Login to Boards</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="recovery-note">Recovery Note (optional):</label>
+                    <textarea id="recovery-note" placeholder="Write something to help you remember your password"></textarea>
+                    <small>This is instead of email recovery</small>
+                </div>
+                <button type="submit" class="submit-btn">Login / Register</button>
+            </form>
+            <p class="modal-footer">Don't have an account? Just enter a username and password to create one.</p>
+        </div>
+    </div>
+
+    <!-- Spotify Modal -->
+    <div id="spotify-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Add Spotify Music</h2>
+            <form id="spotify-form">
+                <div class="form-group">
+                    <label for="spotify-link">Spotify Link:</label>
+                    <input type="text" id="spotify-link" placeholder="https://open.spotify.com/track/..." required>
+                </div>
+                <button type="submit" class="submit-btn">Add to Board</button>
+            </form>
+        </div>
+    </div>
+
+     <!-- Load JavaScript files -->
+<script src="js/script.js"></script>
+<script src="js/api.js"></script>
+<script src="js/login.js"></script>
+<script src="js/boards.js"></script>
+</body>
+</html>
