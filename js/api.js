@@ -3,7 +3,7 @@
 // ===========================================
 class HopeAPI {
   constructor() {
-   this.baseURL = 'https://hope-project.lilnerosahumi.workers.dev/api';
+   this.baseURL = 'https://hope-project.lilnerosahumi.workers.dev';
     this.token = localStorage.getItem('hope_token');
   }
 
