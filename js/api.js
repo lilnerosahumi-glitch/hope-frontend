@@ -228,7 +228,7 @@ class HopeAPI {
     console.log('User:', this.getCurrentUser());
     
     try {
-      const health = await fetch('https://hope-project.lilnerosahumi.workers.dev/api').then(r => r.json());
+      const health = await fetch('https://hope-project.lilnerosahumi.workers.dev').then(r => r.json());
       console.log('Health check:', health);
     } catch (e) {
       console.log('Backend not reachable');
