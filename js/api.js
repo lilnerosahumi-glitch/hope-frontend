@@ -1,5 +1,5 @@
 // ===========================================
-// HOPE PROJECT API CLIENT - SIMPLE WORKING VERSION
+// HOPE PROJECT API CLIENT - FIXED VERSION
 // ===========================================
 class HopeAPI {
   constructor() {
@@ -76,7 +76,7 @@ class HopeAPI {
     console.log(`👤 Login attempt: ${username}`);
     
     try {
-      const data = await this.request('/auth/login', {
+      const data = await this.request('/api/auth/login', { // ✅ FIXED: Added /api/
         method: 'POST',
         body: JSON.stringify({ username, password })
       });
@@ -122,11 +122,11 @@ class HopeAPI {
   }
 
   // ===========================================
-  // BOARDS - SIMPLE VERSION
+  // BOARDS - FIXED VERSION
   // ===========================================
   async getPublicBoards() {
     try {
-      const boards = await this.request('/boards/public');
+      const boards = await this.request('/api/boards/public'); // ✅ FIXED: Added /api/
       console.log(`📋 Got ${boards.length} public boards`);
       return boards;
     } catch (error) {
@@ -143,7 +143,7 @@ class HopeAPI {
         return [];
       }
       
-      const boards = await this.request('/boards/user');
+      const boards = await this.request('/api/boards/user'); // ✅ FIXED: Added /api/
       console.log(`📋 Got ${boards.length} user boards for ${user.username}`);
       return boards;
     } catch (error) {
@@ -158,7 +158,7 @@ class HopeAPI {
     const user = this.getCurrentUser();
     if (!user) throw new Error('Please login first');
     
-    return await this.request('/boards', {
+    return await this.request('/api/boards', { // ✅ FIXED: Added /api/
       method: 'POST',
       body: JSON.stringify({ title })
     });
@@ -166,7 +166,7 @@ class HopeAPI {
 
   async getBoard(boardId) {
     console.log(`📖 Getting board: ${boardId}`);
-    return await this.request(`/boards/${boardId}`);
+    return await this.request(`/api/boards/${boardId}`); // ✅ FIXED: Added /api/
   }
 
   async updateBoard(boardId, data) {
@@ -176,44 +176,45 @@ class HopeAPI {
       elements: data.elements?.length || 0
     });
     
-    return await this.request(`/boards/${boardId}`, {
+    return await this.request(`/api/boards/${boardId}`, { // ✅ FIXED: Added /api/
       method: 'PUT',
       body: JSON.stringify(data)
     });
   }
 
   // ===========================================
-  // OTHER ENDPOINTS
+  // OTHER ENDPOINTS - FIXED VERSION
   // ===========================================
   async getLetters(search = '', category = '') {
-  // Only add parameters if they have values
-  const params = new URLSearchParams();
-  if (search && search.trim() !== '') params.append('search', search);
-  if (category && category.trim() !== '') params.append('category', category);
+    // Only add parameters if they have values
+    const params = new URLSearchParams();
+    if (search && search.trim() !== '') params.append('search', search);
+    if (category && category.trim() !== '') params.append('category', category);
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return await this.request(`/api/letters${query}`); // ✅ Already fixed
+  }
   
-  const query = params.toString() ? `?${params.toString()}` : '';
-  return await this.request(`/letters${query}`);
-}
   async addLetter(letterData) {
-    return await this.request('/letters', {
+    return await this.request('/api/letters', { // ✅ FIXED: Added /api/
       method: 'POST',
       body: JSON.stringify(letterData)
     });
   }
 
   async likeLetter(letterId) {
-    return await this.request(`/letters/${letterId}/like`, {
+    return await this.request(`/api/letters/${letterId}/like`, { // ✅ FIXED: Added /api/
       method: 'POST'
     });
   }
 
   async getResources(tag = 'all') {
     const query = tag !== 'all' ? `?tag=${tag}` : '';
-    return await this.request(`/resources${query}`);
+    return await this.request(`/api/resources${query}`); // ✅ FIXED: Added /api/
   }
 
   async addResource(resourceData) {
-    return await this.request('/resources', {
+    return await this.request('/api/resources', { // ✅ FIXED: Added /api/
       method: 'POST',
       body: JSON.stringify(resourceData)
     });
@@ -228,7 +229,7 @@ class HopeAPI {
     console.log('User:', this.getCurrentUser());
     
     try {
-      const health = await fetch('https://hope-project.lilnerosahumi.workers.dev').then(r => r.json());
+      const health = await fetch('https://hope-project.lilnerosahumi.workers.dev/api/health').then(r => r.json());
       console.log('Health check:', health);
     } catch (e) {
       console.log('Backend not reachable');
