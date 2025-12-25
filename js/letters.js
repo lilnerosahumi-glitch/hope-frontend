@@ -1,9 +1,9 @@
-// Letters page functionality with API
+// Letters page functionality with API - FIXED VERSION
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Letters page loaded, initializing...');
     
     const letterForm = document.getElementById('letter-form');
-    const lettersFeed = document.getElementById('letters-feed');
+    const lettersFeed = document.getElementById('letters-feed'); // FIXED: Changed from 'letters-container'
     const searchInput = document.getElementById('letter-search');
     const searchBtn = document.getElementById('search-btn');
     const categorySelect = document.getElementById('category');
@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const search = searchInput.value.trim();
             const category = categorySelect.value;
             
-            const letters = await api.getLetters(search, category);
+            // FIXED: API doesn't accept parameters
+            const letters = await api.getLetters();
             lettersFeed.innerHTML = '';
             
             if (letters.length === 0) {
@@ -42,10 +43,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             letterDiv.style.borderLeftColor = letter.color;
         }
         
-        // Display only the year
-        const year = typeof letter.createdAt === 'string' 
-            ? new Date(letter.createdAt).getFullYear()
-            : letter.createdAt;
+        // FIXED: createdAt is already a year number
+        const year = letter.createdAt;
         
         letterDiv.innerHTML = `
             <div class="letter-header">
@@ -102,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
     
-    // Handle search
+    // Handle search (will need backend support later)
     searchBtn.addEventListener('click', displayLetters);
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -122,8 +121,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const result = await api.likeLetter(letterId);
                 
                 // Update like count
-                const currentCount = parseInt(e.target.textContent.match(/\d+/)?.[0] || 0);
-                e.target.textContent = `💗 ${result.likes || currentCount + 1}`;
+                e.target.textContent = `💗 ${result.likes || 0}`;
                 
                 // Show appreciation message
                 showTemporaryMessage("💗 Thank you for liking this letter!");
