@@ -186,14 +186,14 @@ class HopeAPI {
   // OTHER ENDPOINTS
   // ===========================================
   async getLetters(search = '', category = '') {
-    const params = new URLSearchParams();
-    if (search) params.append('search', search);
-    if (category) params.append('category', category);
-    
-    const query = params.toString() ? `?${params.toString()}` : '';
-    return await this.request(`/letters${query}`);
-  }
-
+  // Only add parameters if they have values
+  const params = new URLSearchParams();
+  if (search && search.trim() !== '') params.append('search', search);
+  if (category && category.trim() !== '') params.append('category', category);
+  
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return await this.request(`/letters${query}`);
+}
   async addLetter(letterData) {
     return await this.request('/letters', {
       method: 'POST',
