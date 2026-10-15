@@ -593,8 +593,9 @@
         width: min(180px, calc(100vw - 30px));
     }
 }
-
     </style>
+
+<link rel="stylesheet" href="css/resources.css">
 </head>
 <body>
     <nav class="main-nav">
@@ -610,7 +611,12 @@
             <h1>Resources</h1>
             <p>Helpful mental health resources and information</p>
         </header>
-        
+
+        <div class="admin-banner">
+            <span>🛡️ <strong>Moderator mode is on.</strong> You can delete resources.</span>
+            <button type="button" id="admin-logout">Exit moderator mode</button>
+        </div>
+
         <div class="resources-content">
             <!-- Filter System -->
             <div class="filter-section">
@@ -637,59 +643,76 @@
                 </div>
                 <div id="helpline-results" class="helpline-results"></div>
             </div>
+
+
+<a href="https://hopeprojectnewsletter.my.canva.site/" class="announcements-link">
+    <div class="announcements-icon">📢</div>
+    <div class="announcements-text">
+        <h2>Announcements (click here)</h2>
+        <p>Read the latest news and updates from the Hope Project team.</p>
+    </div>
+</a>
             
             <!-- Resources Grid -->
             <div class="resources-grid">
-                <div class="resource-card" data-tags="stress,self-care">
+                <div class="resource-card" data-id="mindful-breathing" data-tags="stress,self-care">
+                     <button class="delete-btn" data-delete-resource="mindful-breathing" title="Delete resource">X</button>
                     <div class="resource-icon">🧘</div>
                     <h3>Mindful Breathing</h3>
                     <p>Simple breathing techniques to reduce stress and anxiety in minutes.</p>
                     <a href="#" class="resource-link" data-article="mindful-breathing">Learn more</a>
                 </div>
                 
-                <div class="resource-card" data-tags="school,stress">
+                <div class="resource-card" data-id="study-strategies" data-tags="school,stress">
+                     <button class="delete-btn" data-delete-resource="study-strategies" title="Delete resource">X</button>
                     <div class="resource-icon">📚</div>
                     <h3>Study Strategies</h3>
                     <p>Effective ways to manage schoolwork without getting overwhelmed.</p>
                     <a href="#" class="resource-link" data-article="study-strategies">Learn more</a>
                 </div>
                 
-                <div class="resource-card" data-tags="friendship,self-care">
+                <div class="resource-card" data-id="healthy-relationships" data-tags="friendship,self-care">
+                     <button class="delete-btn" data-delete-resource="healthy-relationships" title="Delete resource">X</button>
                     <div class="resource-icon">👥</div>
                     <h3>Healthy Relationships</h3>
                     <p>Tips for building and maintaining positive friendships.</p>
                     <a href="#" class="resource-link" data-article="healthy-relationships">Learn more</a>
                 </div>
                 
-                <div class="resource-card" data-tags="anxiety,self-care">
+                <div class="resource-card" data-id="grounding-techniques" data-tags="anxiety,self-care">
+                     <button class="delete-btn" data-delete-resource="grounding-techniques" title="Delete resource">X</button>
                     <div class="resource-icon">🌱</div>
                     <h3>Grounding Techniques</h3>
                     <p>Methods to stay present when feeling anxious or overwhelmed.</p>
                     <a href="#" class="resource-link" data-article="grounding-techniques">Learn more</a>
                 </div>
                 
-                <div class="resource-card" data-tags="stress,school">
+                <div class="resource-card" data-id="time-management" data-tags="stress,school">
+                     <button class="delete-btn" data-delete-resource="time-management" title="Delete resource">X</button>
                     <div class="resource-icon">⏰</div>
                     <h3>Time Management</h3>
                     <p>How to balance school, activities, and personal time effectively.</p>
                     <a href="#" class="resource-link" data-article="time-management">Learn more</a>
                 </div>
                 
-                <div class="resource-card" data-tags="self-care">
+                <div class="resource-card" data-id="sleep-hygiene" data-tags="self-care">
+                     <button class="delete-btn" data-delete-resource="sleep-hygiene" title="Delete resource">X</button>
                     <div class="resource-icon">💤</div>
                     <h3>Sleep Hygiene</h3>
                     <p>Improve your sleep quality for better mental health.</p>
                     <a href="#" class="resource-link" data-article="sleep-hygiene">Learn more</a>
                 </div>
                 
-                <div class="resource-card" data-tags="work,stress">
+                <div class="resource-card" data-id="workplace-stress" data-tags="work,stress">
+                     <button class="delete-btn" data-delete-resource="workplace-stress" title="Delete resource">X</button>
                     <div class="resource-icon">💼</div>
                     <h3>Workplace Stress</h3>
                     <p>Managing stress and maintaining mental health in the workplace.</p>
                     <a href="#" class="resource-link" data-article="workplace-stress">Learn more</a>
                 </div>
                 
-                <div class="resource-card" data-tags="family,self-care">
+                <div class="resource-card" data-id="family-dynamics" data-tags="family,self-care">
+                     <button class="delete-btn" data-delete-resource="family-dynamics" title="Delete resource">X</button>
                     <div class="resource-icon">🏠</div>
                     <h3>Family Dynamics</h3>
                     <p>Navigating family relationships and setting healthy boundaries.</p>
@@ -701,7 +724,11 @@
             <div class="add-resource-section">
                 <button id="add-resource-btn">+ ADD RESOURCE</button>
             </div>
-            
+
+            <footer class="page-footer">
+                <a href="#" id="admin-toggle"> Moderator</a>
+            </footer>
+
             <!-- Add Resource Form (initially hidden) -->
             <div id="resource-form">
                 <h2>Add New Resource</h2>
@@ -710,7 +737,17 @@
                         <label for="resource-title">Title</label>
                         <input type="text" id="resource-title" required>
                     </div>
-                    
+
+            <div class="form-group">
+               <label for="resource-icon">Icon</label>
+                <div class="emoji-field">
+                 <div class="emoji-preview" id="emoji-preview">🌱</div>
+                <input type="text" id="resource-icon" value="🌱" maxlength="4" aria-label="Selected emoji">
+                <span class="emoji-hint">Pick an emoji below, or type your own in the box.</span>
+                    </div>
+
+    <div class="emoji-grid" id="emoji-grid"><!-- JS fills this --></div>
+</div>
                     <div class="form-group">
                         <label for="resource-description">Description</label>
                         <textarea id="resource-description" required></textarea>
@@ -745,16 +782,33 @@
     </div>
     
     <!-- Article Modal -->
-    <div id="article-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <div class="article-content">
-                <h2 id="article-title"></h2>
-                <div id="article-body"></div>
+   <div id="article-modal" class="modal">
+    <div class="modal-content">
+        <button class="close-modal" data-close>&times;</button>
+        <div class="article-content">
+            <h2 id="article-title"></h2>
+            <div id="article-body"></div>
+        </div>
+    </div>
+</div>
+
+<div id="admin-modal" class="modal">
+    <div class="modal-content admin-modal-content">
+        <button class="close-modal" data-close>&times;</button>
+        <div class="article-content">
+            <h2>Moderator Login</h2>
+            <p>Enter the moderator password to manage resources.</p>
+            <div class="form-group">
+                <label for="admin-password">Password</label>
+                <input type="password" id="admin-password" autocomplete="current-password">
+            </div>
+            <p id="admin-error" class="admin-error"></p>
+            <div class="form-buttons">
+                <button type="button" id="admin-login-btn" class="primary-btn">Log in</button>
             </div>
         </div>
     </div>
-    
+</div>
     <!-- Cat mascot -->
     <div class="cat-mascot">
         <img src="images/cat.png" alt="Helper Cat">
