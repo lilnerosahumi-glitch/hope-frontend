@@ -68,22 +68,6 @@
     flex-shrink: 0;
 }
 
-/* Mission section hearts */
-.mission-values li:nth-child(1) .value-icon::before {
-    content: "☆";
-    color: #CBB0FF; /* Updated to #CBB0FF */
-}
-
-.mission-values li:nth-child(2) .value-icon::before {
-    content: "☆";
-    color: #CBB0FF; /* Updated to #CBB0FF */
-}
-
-.mission-values li:nth-child(3) .value-icon::before {
-    content: "☆";
-    color: #CBB0FF; /* Updated to #CBB0FF */
-}
-
 .value-text h3 {
     color: #CBB0FF; /* Updated to #CBB0FF */
     margin-bottom: 0.5rem;
