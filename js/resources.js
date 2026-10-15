@@ -1,5 +1,9 @@
-// resources.js
 document.addEventListener('DOMContentLoaded', function() {
+
+const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';     
+    const ADMIN_STORAGE_KEY = 'hope_admin_session';
+    const CUSTOM_RESOURCES_KEY = 'hope_custom_resources';
+
     // Initialize articles data
     const articles = {
         'mindful-breathing': {
@@ -339,21 +343,67 @@ document.addEventListener('DOMContentLoaded', function() {
             `
         }
     };
+   
+    //Load custom resources from localStorage
+    
+    function loadCustomResources() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(CUSTOM_RESOURCES_KEY) || '[]');
+            stored.forEach(res => {
+                articles[res.id] = { title: res.title, content: res.content };
+                renderResourceCard(res, false);
+            });
+        } catch (e) {
+            console.warn('Could not load custom resources:', e);
+        }
+    }
 
-    // Initialize filter functionality
+   
+    //Render a resource card (with delete button)
+    
+    function renderResourceCard(data, saveToStorage = true) {
+        const grid = document.querySelector('.resources-grid');
+        if (!grid) return;
+
+        const card = document.createElement('div');
+        card.className = 'resource-card';
+        card.setAttribute('data-id', data.id);
+        card.setAttribute('data-tags', data.tags.join(','));
+
+        card.innerHTML = `
+            <button class="delete-btn" data-delete-resource="${data.id}" title="Delete resource">🗑</button>
+            <div class="resource-icon">${data.icon}</div>
+            <h3>${escapeHtml(data.title)}</h3>
+            <p>${escapeHtml(data.description)}</p>
+            <a href="#" class="resource-link" data-article="${data.id}">Learn more</a>
+        `;
+
+        grid.appendChild(card);
+
+        if (saveToStorage) {
+            const stored = JSON.parse(localStorage.getItem(CUSTOM_RESOURCES_KEY) || '[]');
+            stored.push(data);
+            localStorage.setItem(CUSTOM_RESOURCES_KEY, JSON.stringify(stored));
+        }
+    }
+
+    // Small helper to avoid HTML injection in title/description
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Initialize everything
+    loadCustomResources();          
     initializeFilters();
-    
-    // Initialize article modal functionality
     initializeArticleModal();
-    
-    // Initialize resource form functionality
     initializeResourceForm();
-    
-    // Initialize helpline search
+    initializeEmojiPicker();        
     initializeHelplineSearch();
-    
-    // Initialize cat mascot
     initializeCatMascot();
+    initializeAdminMode();          
+    initializeDeleteButtons();      
 
     // Filter functionality
     function initializeFilters() {
@@ -393,49 +443,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // Article modal functionality
     function initializeArticleModal() {
         const modal = document.getElementById('article-modal');
-        const closeModal = document.querySelector('.close-modal');
-        const articleLinks = document.querySelectorAll('.resource-link[data-article]');
-        
-        articleLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const articleId = this.getAttribute('data-article');
-                
-                if (articles[articleId]) {
-                    document.getElementById('article-title').textContent = articles[articleId].title;
-                    document.getElementById('article-body').innerHTML = articles[articleId].content;
-                    modal.style.display = 'block';
-                }
-            });
-        });
-        
-        closeModal.addEventListener('click', function() {
-            modal.style.display = 'none';
-        });
-        
-        window.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                modal.style.display = 'none';
+
+        document.addEventListener('click', function (e) {
+            const link = e.target.closest('.resource-link[data-article]');
+            if (!link) return;
+            e.preventDefault();
+
+            const articleId = link.getAttribute('data-article');
+            if (articles[articleId]) {
+                document.getElementById('article-title').textContent = articles[articleId].title;
+                document.getElementById('article-body').innerHTML = articles[articleId].content;
+                modal.classList.add('open');
+                document.body.style.overflow = 'hidden';
             }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (e.target.matches('[data-close]')) closeAllModals();
+            if (e.target.classList.contains('modal')) closeAllModals();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeAllModals();
         });
     }
 
-    // Resource form functionality
+    function closeAllModals() {
+        document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
+        document.body.style.overflow = '';
+    }
+
+
+       // Resource form functionality
     function initializeResourceForm() {
         const addResourceBtn = document.getElementById('add-resource-btn');
         const resourceForm = document.getElementById('resource-form');
         const cancelResourceBtn = document.getElementById('cancel-resource');
-        const submitResourceBtn = document.getElementById('submit-resource');
         const newResourceForm = document.getElementById('new-resource-form');
         const tagSelectors = document.querySelectorAll('.tag-selector');
-        
+
         let selectedTags = [];
-        
+
         // Toggle tag selection
         tagSelectors.forEach(tag => {
-            tag.addEventListener('click', function() {
+            tag.addEventListener('click', function () {
                 const tagValue = this.getAttribute('data-tag');
-                
                 if (this.classList.contains('selected')) {
                     this.classList.remove('selected');
                     selectedTags = selectedTags.filter(t => t !== tagValue);
@@ -445,9 +497,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
-        
+
         // Show form
-        addResourceBtn.addEventListener('click', function() {
+        addResourceBtn.addEventListener('click', function () {
             resourceForm.style.display = 'block';
             addResourceBtn.style.display = 'none';
             window.scrollTo({
@@ -455,48 +507,178 @@ document.addEventListener('DOMContentLoaded', function() {
                 behavior: 'smooth'
             });
         });
-        
+
         // Hide form
-        cancelResourceBtn.addEventListener('click', function() {
-            resourceForm.style.display = 'none';
-            addResourceBtn.style.display = 'inline-block';
-            newResourceForm.reset();
-            tagSelectors.forEach(tag => tag.classList.remove('selected'));
-            selectedTags = [];
-        });
-        
+        cancelResourceBtn.addEventListener('click', resetResourceForm);
+
         // Submit form
-        newResourceForm.addEventListener('submit', function(e) {
+        newResourceForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            
-            const title = document.getElementById('resource-title').value;
-            const description = document.getElementById('resource-description').value;
-            const content = document.getElementById('resource-content').value;
-            
+
+            const title = document.getElementById('resource-title').value.trim();
+            const description = document.getElementById('resource-description').value.trim();
+            const content = document.getElementById('resource-content').value.trim();
+            const icon = document.getElementById('resource-icon').value.trim() || '🌱';
+
             if (selectedTags.length === 0) {
                 alert('Please select at least one tag');
                 return;
             }
-            
-            // In a real app, you would save this to a database
-            console.log('New resource submitted:', {
-                title,
-                description,
-                content,
-                tags: selectedTags
-            });
-            
-            alert('Resource submitted! (In a real app, this would be saved to the database)');
-            
-            // Reset form
+
+            const id = 'custom-' + Date.now();
+            const data = { id, title, description, content, icon, tags: [...selectedTags] };
+
+            articles[id] = { title, content };
+
+            renderResourceCard(data, true);
+
+            alert('Resource added!');
+            resetResourceForm();
+        });
+
+        // Reset helper
+        function resetResourceForm() {
             newResourceForm.reset();
+            document.getElementById('resource-icon').value = '🌱';
+            document.getElementById('emoji-preview').textContent = '🌱';
+            document.querySelectorAll('.emoji-option.selected')
+                .forEach(el => el.classList.remove('selected'));
             tagSelectors.forEach(tag => tag.classList.remove('selected'));
             selectedTags = [];
             resourceForm.style.display = 'none';
             addResourceBtn.style.display = 'inline-block';
+        }
+    }
+
+    //Emoji picker
+    function initializeEmojiPicker() {
+        const emojiGrid = document.getElementById('emoji-grid');
+        const emojiPreview = document.getElementById('emoji-preview');
+        const emojiInput = document.getElementById('resource-icon');
+
+        if (!emojiGrid || !emojiPreview || !emojiInput) return;
+
+        const emojis = [
+            '🧘', '📚', '👥', '🌱', '⏰', '💤', '💼', '🏠',
+            '💖', '🌸', '🌈', '☀️', '🌙', '⭐', '🔥', '💧',
+            '🎯', '🎨', '🎵', '📝', '📖', '🧠', '💭', '🗣️',
+            '🤝', '💪', '🧩', '🌻', '🍃', '🕊️', '🐱', '🐾',
+            '☕', '🍎', '🏃', '🚶', '🧴', '🛁', '🧸', '🎈'
+        ];
+
+        emojis.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'emoji-option';
+            btn.textContent = emoji;
+            btn.dataset.emoji = emoji;
+
+            btn.addEventListener('click', () => {
+                emojiInput.value = emoji;
+                emojiPreview.textContent = emoji;
+                document.querySelectorAll('.emoji-option.selected')
+                    .forEach(el => el.classList.remove('selected'));
+                btn.classList.add('selected');
+            });
+
+            emojiGrid.appendChild(btn);
+        });
+
+        emojiInput.addEventListener('input', () => {
+            emojiPreview.textContent = emojiInput.value || '🌱';
         });
     }
 
+    
+    //Moderator mode
+    function initializeAdminMode() {
+        const adminToggle = document.getElementById('admin-toggle');
+        const adminModal = document.getElementById('admin-modal');
+        const adminLoginBtn = document.getElementById('admin-login-btn');
+        const adminPassword = document.getElementById('admin-password');
+        const adminError = document.getElementById('admin-error');
+        const adminLogout = document.getElementById('admin-logout');
+
+        if (!adminToggle || !adminModal) return;
+
+        // Restore session from localStorage
+        if (localStorage.getItem(ADMIN_STORAGE_KEY) === 'yes') {
+            document.body.classList.add('admin-mode');
+        }
+
+        // Open login modal when footer link is clicked
+        adminToggle.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (document.body.classList.contains('admin-mode')) {
+                alert('You are already in moderator mode.');
+                return;
+            }
+            adminPassword.value = '';
+            adminError.textContent = '';
+            adminModal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => adminPassword.focus(), 100);
+        });
+
+        // Try to log in
+        function tryLogin() {
+            if (adminPassword.value === ADMIN_PASSWORD) {
+                localStorage.setItem(ADMIN_STORAGE_KEY, 'yes');
+                document.body.classList.add('admin-mode');
+                closeAllModals();
+            } else {
+                adminError.textContent = 'Incorrect password. Try again.';
+                adminPassword.value = '';
+                adminPassword.focus();
+            }
+        }
+
+        adminLoginBtn.addEventListener('click', tryLogin);
+        adminPassword.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') tryLogin();
+        });
+
+        // Log out
+        adminLogout.addEventListener('click', function () {
+            localStorage.removeItem(ADMIN_STORAGE_KEY);
+            document.body.classList.remove('admin-mode');
+        });
+    }
+
+        
+    //Delete buttons
+    function initializeDeleteButtons() {
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.delete-btn');
+            if (!btn) return;
+            
+            if (!document.body.classList.contains('admin-mode')) return;
+
+            const id = btn.getAttribute('data-delete-resource');
+            const card = btn.closest('.resource-card');
+
+            if (!confirm('Delete this resource? This cannot be undone.')) return;
+
+            delete articles[id];
+
+            try {
+                const stored = JSON.parse(localStorage.getItem(CUSTOM_RESOURCES_KEY) || '[]');
+                const filtered = stored.filter(r => r.id !== id);
+                localStorage.setItem(CUSTOM_RESOURCES_KEY, JSON.stringify(filtered));
+            } catch (err) {
+                console.warn('Could not update localStorage:', err);
+            }
+
+            if (card) {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => card.remove(), 300);
+            }
+        });
+    }
+
+    
     // Helpline search functionality
     function initializeHelplineSearch() {
         const searchBtn = document.getElementById('search-helpline');
