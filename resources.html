@@ -490,6 +490,110 @@
                 font-size: 0.9rem;
             }
         }
+
+/* Additional responsive fixes for phones */
+@media (max-width: 480px) {
+    .container {
+        padding: 1rem;
+        width: 100%;
+    }
+
+    .main-nav {
+        padding: 0.75rem 0.5rem;
+        gap: 0.25rem;
+    }
+
+    .nav-link {
+        margin: 0;
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .page-header {
+        margin: 1.5rem 0;
+        padding-bottom: 1rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .page-header p {
+        font-size: 1rem;
+    }
+
+    .filter-section,
+    .helpline-section {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .tag-filters {
+        gap: 0.4rem;
+    }
+
+    .tag-filter {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .helpline-search {
+        flex-direction: column;
+    }
+
+    #country-search,
+    #search-helpline {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .resources-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    .resource-card {
+        padding: 1.2rem;
+        min-width: 0;
+    }
+
+    .modal-content {
+        width: calc(100% - 24px);
+        margin: 12px auto;
+        padding: 1.5rem 1rem;
+    }
+
+    .article-content h2 {
+        font-size: 1.5rem;
+        overflow-wrap: anywhere;
+    }
+
+    #resource-form {
+        padding: 1rem;
+    }
+
+    .form-buttons {
+        flex-wrap: wrap;
+    }
+
+    .form-buttons button {
+        flex: 1 1 100%;
+    }
+
+    .cat-mascot {
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .cat-mascot img {
+        width: 60px;
+    }
+
+    .speech-bubble {
+        width: min(180px, calc(100vw - 30px));
+    }
+}
+
     </style>
 </head>
 <body>

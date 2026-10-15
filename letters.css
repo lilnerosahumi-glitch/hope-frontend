@@ -1,0 +1,323 @@
+/* Base styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Merriweather', serif;
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+    padding: 0;
+    margin: 0;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Navigation - FIXED */
+.main-nav {
+    background-color: #CBB0FF;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    margin: 0 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    font-family: 'Merriweather', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    background-color: #b495f0;
+}
+
+/* Page Header */
+.page-header {
+    text-align: center;
+    margin: 3rem 0 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #eee;
+}
+
+.page-header h1 {
+    font-size: 2.8rem;
+    color: #CBB0FF;
+    margin-bottom: 0.5rem;
+    font-family: 'Merriweather', serif;
+    font-weight: 700;
+}
+
+.page-header p {
+    font-size: 1.3rem;
+    color: #777;
+    margin-top: 1.5rem;
+}
+
+/* Letters Content Layout */
+.letters-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+/* Form Section */
+.letter-form-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    height: fit-content;
+    position: sticky;
+    top: 100px;
+}
+
+.letter-form-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    color: #CBB0FF;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #555;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: 'Merriweather', serif;
+}
+
+.form-group textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+#letter-color {
+    height: 40px;
+    width: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #CBB0FF;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Merriweather', serif;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.submit-btn:hover {
+    background: #b495f0;
+}
+
+/* Letters Feed Section */
+.letters-feed-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.feed-header h2 {
+    font-size: 1.2rem;
+    color: #CBB0FF;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+}
+
+#letter-search {
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px 0 0 8px;
+    width: 200px;
+    font-family: 'Merriweather', serif;
+}
+
+#search-btn {
+    padding: 0.8rem 1rem;
+    background: #CBB0FF;
+    color: white;
+    border: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+}
+
+/* Letter Cards */
+.letters-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.letter-card {
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-left: 5px solid #CBB0FF;
+}
+
+.letter-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.letter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.letter-recipient {
+    font-weight: bold;
+    color: #555;
+}
+
+.letter-category {
+    padding: 0.3rem 0.8rem;
+    background: #CBB0FF;
+    color: white;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.letter-message {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    font-family: 'Merriweather', serif;
+}
+
+.letter-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.letter-actions button {
+    background: none;
+    border: none;
+    color: #CBB0FF;
+    cursor: pointer;
+    margin-left: 1rem;
+}
+
+.letter-actions button:hover {
+    text-decoration: underline;
+}
+
+.empty-feed {
+    text-align: center;
+    padding: 2rem;
+    color: #888;
+}
+/* Responsive Design */
+@media (max-width: 968px) {
+    .letters-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .letter-form-section {
+        position: static;
+        margin-bottom: 2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .feed-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    #letter-search {
+        width: 100%;
+    }
+    
+    .letter-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .main-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .nav-link {
+        margin: 0.3rem;
+        font-size: 0.8rem;
+    }
+    
+    .cat-mascot {
+        width: 60px;
+        height: 60px;
+        bottom: 1rem;
+        right: 1rem;
+    }
+    
+    .speech-bubble {
+        width: 180px;
+        bottom: 70px;
+    }
+}

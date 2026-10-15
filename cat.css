@@ -1,0 +1,52 @@
+.hidden { display: none; }
+.cat-mascot {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 900;
+}
+
+.cat-mascot img {
+    width: 80px;
+    height: auto;
+}
+
+/* Bubble floating above cat */
+.speech-bubble {
+    position: absolute;
+    bottom: 100%; /* bubble sits above the cat image */
+    right: 0;
+    margin-bottom: 10px; /* small gap above cat */
+    background: #fcf8f8;
+    padding: 1rem;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    width: 200px;
+
+    /* text inside bubble */
+    color: #000000;
+    font-size: 0.80rem;
+    line-height: 1.4;
+}
+
+/* Small triangle below bubble */
+.speech-bubble:after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 20px;
+    border-width: 10px 10px 0;
+    border-style: solid;
+    border-color: #fcf8f8 transparent;
+}
+
+/* Close button */
+.close-bubble {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000000;
+    cursor: pointer;
+}

@@ -1,0 +1,205 @@
+* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Base styles */
+body {
+  font-family: 'Merriweather', serif;
+  background: #fffdfd; 
+  color: #f9f9f9;
+  line-height: 1.6;
+}
+
+/* Bigger paragraph text */
+p {
+  font-size: 1.2rem;
+  line-height: 1.8;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Typography */
+h1, h2, h3, h4 {
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+/* Homepage */
+.home-header {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.title-image {
+  max-width: 400px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+.category-card {
+  background: #222;
+  border-radius: 15px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+#resources-card { border-top: 5px solid #FFC0CB; }
+#boards-card { border-top: 5px solid #A0D8EF; }
+#letters-card { border-top: 5px solid #E6E6FA; }
+#about-card { border-top: 5px solid #FFFACD; }
+
+.card-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Stars */
+.star {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.9;
+  animation: twinkle infinite alternate;
+}
+
+@keyframes twinkle {
+  from { opacity: 0.4; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.3); }
+}
+
+.main-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #222;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  padding: 1rem 2rem; /* more padding for breathing space */
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.nav-link {
+  margin: 0 2rem;          /* more space between links */
+  text-decoration: none;
+  color: #ffffff;          /* brighter, fully white */
+  font-size: 1.1rem;       /* larger letters */
+  letter-spacing: 1px;     /* add a little space between letters */
+  font-weight: 500;        /* slightly bolder for visibility */
+  transition: color 0.3s;  /* smooth hover */
+}
+
+.nav-link:hover {
+  color: #A0D8EF;          /* pastel blue on hover */
+}
+
+
+.hidden { display: none; }
+.cat-mascot {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 900;
+}
+
+.cat-mascot img {
+    width: 80px;
+    height: auto;
+}
+
+/* Bubble floating above cat */
+.speech-bubble {
+    position: absolute;
+    bottom: 100%; /* bubble sits above the cat image */
+    right: 0;
+    margin-bottom: 10px; /* small gap above cat */
+    background: #fcf8f8;
+    padding: 1rem;
+    border-radius: 15px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+    width: 200px;
+
+    /* text inside bubble */
+    color: #000000;
+    font-size: 0.80rem;
+    line-height: 1.4;
+}
+
+/* Small triangle below bubble */
+.speech-bubble:after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 20px;
+    border-width: 10px 10px 0;
+    border-style: solid;
+    border-color: #fcf8f8 transparent;
+}
+
+/* Close button */
+.close-bubble {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000000;
+    cursor: pointer;
+}
+/* FIX FOR VISIBILITY DROPDOWN - MAKE IT ALWAYS CLICKABLE */
+#board-visibility {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    background-color: white !important;
+    color: #333 !important;
+    opacity: 1 !important;
+}
+
+/* Override disabled state */
+#board-visibility:disabled {
+    background-color: white !important;
+    color: #333 !important;
+    border-color: #ddd !important;
+    opacity: 1 !important;
+}
+
+/* Make sure the select box looks normal */
+.visibility-toggle select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: 'Merriweather', serif;
+    background: white;
+    cursor: pointer;
+    min-width: 100px;
+}
+
+/* Emergency override for any parent disabling */
+.editor-actions * {
+    pointer-events: auto !important;
+}
