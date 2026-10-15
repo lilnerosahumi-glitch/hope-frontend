@@ -163,8 +163,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return;
         }
-        boards.forEach(b => container.appendChild(makeBoardCard(b, editable)));
-    }
+            
+    const shuffled = [...boards].sort(() => Math.random() - 0.5);
+    shuffled.forEach(b => container.appendChild(makeBoardCard(b, editable)));
+}
 
     function makeBoardCard(board, editable) {
         const card = document.createElement('div');
