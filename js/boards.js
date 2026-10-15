@@ -1,1567 +1,1019 @@
-// Boards functionality with smooth dragging and better editing
-document.addEventListener('DOMContentLoaded', async function() {
-    // DOM Elements
-    const createBoardBtn = document.getElementById('create-board-btn');
+//BOARDS 
+document.addEventListener('DOMContentLoaded', function () {
+
+    /*DEVICE TOKEN — replaces login*/
+    let TOKEN = localStorage.getItem('hope_token');
+    if (!TOKEN) {
+        TOKEN = 'user-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('hope_token', TOKEN);
+    }
+    if (window.api && typeof api.setToken === 'function') api.setToken(TOKEN);
+
+    // 1. CONSTANTS
+    const LOGICAL_W = 1200;
+    const LOGICAL_H = 800;
+    const DEFAULT_BG = '#f7f7fb';
+
+    //  2. DOM 
+    const publicGrid    = document.getElementById('public-boards-grid');
+    const myGrid        = document.getElementById('my-boards-grid');
+    const publicSection = document.getElementById('public-boards-section');
+    const mySection     = document.getElementById('my-boards-section');
+    const editor        = document.getElementById('board-editor');
+
+    const createBoardBtn   = document.getElementById('create-board-btn');
     const createMyBoardBtn = document.getElementById('create-my-board-btn');
-    const publicBoardsGrid = document.getElementById('public-boards-grid');
-    const myBoardsGrid = document.getElementById('my-boards-grid');
-    const boardEditor = document.getElementById('board-editor');
-    const backToBoardsBtn = document.getElementById('back-to-boards-btn');
-    const saveBoardBtn = document.getElementById('save-board-btn');
-    const boardCanvas = document.getElementById('board-canvas');
-    const toolButtons = document.querySelectorAll('.tool-btn[data-type]');
-    const imageUpload = document.getElementById('image-upload');
-    const gifUpload = document.getElementById('gif-upload');
+    const backBtn          = document.getElementById('back-to-boards-btn');
+    const saveBtn          = document.getElementById('save-board-btn');
+    const copyLinkBtn      = document.getElementById('copy-link-btn');
+
+    const boardTitleInput = document.getElementById('board-title');
     const boardVisibility = document.getElementById('board-visibility');
-    const shareSection = document.getElementById('share-section');
-    const shareLink = document.getElementById('share-link');
-    const copyLinkBtn = document.getElementById('copy-link-btn');
-    const loginPrompt = document.getElementById('login-prompt');
-    const loginPromptBtn = document.getElementById('login-prompt-btn');
-    const loginModal = document.getElementById('login-modal');
-    const closeModalBtn = document.querySelector('.close-modal');
-    const loginForm = document.getElementById('login-form');
-    const usernameDisplay = document.getElementById('username-display');
-    const logoutBtn = document.getElementById('logout-btn');
+    const bgColorPicker   = document.getElementById('background-color');
+
     const tabButtons = document.querySelectorAll('.tab-btn');
-    const publicBoardsSection = document.getElementById('public-boards-section');
-    const myBoardsSection = document.getElementById('my-boards-section');
-    
-    // Toolbar elements
-    const fontFamilySelect = document.getElementById('font-family');
-    const fontSizeInput = document.getElementById('font-size');
-    const fontColorPicker = document.getElementById('font-color');
-    const boldBtn = document.getElementById('bold-btn');
-    const italicBtn = document.getElementById('italic-btn');
-    const underlineBtn = document.getElementById('underline-btn');
-    const alignLeftBtn = document.getElementById('align-left-btn');
+
+    const canvas          = document.getElementById('board-canvas');
+    const canvasContainer = document.querySelector('.board-canvas-container');
+    const canvasHint      = document.getElementById('canvas-hint');
+
+    const addButtons  = document.querySelectorAll('.tool-btn[data-add]');
+    const imageUpload = document.getElementById('image-upload');
+    const gifUpload   = document.getElementById('gif-upload');
+
+    const textToolbar    = document.getElementById('text-toolbar');
+    const fontFamily     = document.getElementById('font-family');
+    const fontSize       = document.getElementById('font-size');
+    const fontColor      = document.getElementById('font-color');
+    const boldBtn        = document.getElementById('bold-btn');
+    const italicBtn      = document.getElementById('italic-btn');
+    const underlineBtn   = document.getElementById('underline-btn');
+    const alignLeftBtn   = document.getElementById('align-left-btn');
     const alignCenterBtn = document.getElementById('align-center-btn');
-    const alignRightBtn = document.getElementById('align-right-btn');
-    const backgroundColorPicker = document.getElementById('background-color');
-    const applyBgColorBtn = document.getElementById('apply-bg-color');
-    const textBgColorPicker = document.getElementById('text-bg-color');
-    
-    // Spotify modal
+    const alignRightBtn  = document.getElementById('align-right-btn');
+    const textBgColor    = document.getElementById('text-bg-color');
+    const clearBgBtn     = document.getElementById('clear-bg-btn');
+
     const spotifyModal = document.getElementById('spotify-modal');
-    const spotifyForm = document.getElementById('spotify-form');
-    const spotifyLinkInput = document.getElementById('spotify-link');
+    const spotifyForm  = document.getElementById('spotify-form');
+    const spotifyLink  = document.getElementById('spotify-link');
+
     
-    // State variables
+    //  3. STATE
+    
     let currentBoard = null;
-    let isDragging = false;
-    let isResizing = false;
-    let currentElement = null;
-    let startX, startY, startLeft, startTop;
-    let startWidth, startHeight;
-    let selectedElement = null;
-    let currentTab = 'public';
-    let dragOverlay = null;
-    let autoSaveTimeout = null;
-    let lastSaveTime = null;
+    let currentTab   = 'public';
+    let selectedEl   = null;
+    let scale        = 1;
+    let saveTimer    = null;
+    let isSaving     = false;
+
+    function cleanSticker(text) {
+    if (!text) return '⭐';
+    // Strip any HTML tags 
+    const tmp = document.createElement('div');
+    tmp.innerHTML = text;
+    const plain = (tmp.textContent || tmp.innerText || '').trim();
+    // If it's empty after stripping, fall back
+    return plain || '⭐';
+}
     
-    // ===========================================
-    // INITIALIZATION
-    // ===========================================
-    async function init() {
-        await checkLoginStatus();
-        setupEventListeners();
-        createDragOverlay();
-        addUtilityButtons();
-        
-        // Check for share token in URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const shareToken = urlParams.get('share');
-        if (shareToken) {
-            try {
-                const board = await api.getBoard(shareToken);
-                await openBoard(board._id, false);
-            } catch (error) {
-                console.error('Failed to load shared board:', error);
-            }
-        }
+    //  4. CANVAS SCALING (keeps board fully visible anywhere)
+    
+    function fitCanvas() {
+        const w = canvasContainer.clientWidth;
+        if (!w) return;
+        scale = w / LOGICAL_W;
+        canvas.style.transform = `scale(${scale})`;
+        canvas.style.width  = LOGICAL_W + 'px';
+        canvas.style.height = LOGICAL_H + 'px';
+        canvasContainer.style.height = (LOGICAL_H * scale) + 'px';
     }
-    
-    function createDragOverlay() {
-        dragOverlay = document.createElement('div');
-        dragOverlay.className = 'drag-overlay';
-        dragOverlay.innerHTML = '<i class="fas fa-arrows-alt"></i><span style="margin-left: 10px;">Drop anywhere</span>';
-        document.body.appendChild(dragOverlay);
+    window.addEventListener('resize', fitCanvas);
+    if (window.ResizeObserver) new ResizeObserver(fitCanvas).observe(canvasContainer);
+
+    function toLogical(clientX, clientY) {
+        const r = canvas.getBoundingClientRect();
+        return { x: (clientX - r.left) / scale, y: (clientY - r.top) / scale };
     }
-    
-    function addUtilityButtons() {
-        // Add debug button
-        const debugBtn = document.createElement('button');
-        debugBtn.className = 'primary-btn';
-        debugBtn.style.marginLeft = '10px';
-        debugBtn.style.backgroundColor = '#666';
-        debugBtn.innerHTML = '<i class="fas fa-bug"></i> Debug';
-        debugBtn.addEventListener('click', debugBoardData);
-        
-        // Add force save button
-        const forceSaveBtn = document.createElement('button');
-        forceSaveBtn.className = 'primary-btn';
-        forceSaveBtn.style.marginLeft = '10px';
-        forceSaveBtn.style.backgroundColor = '#e74c3c';
-        forceSaveBtn.innerHTML = '<i class="fas fa-save"></i> Force Save';
-        forceSaveBtn.addEventListener('click', () => forceSave());
-        
-        // Add help button
-        const helpBtn = document.createElement('button');
-        helpBtn.className = 'primary-btn';
-        helpBtn.style.marginLeft = '10px';
-        helpBtn.style.backgroundColor = '#3498db';
-        helpBtn.innerHTML = '<i class="fas fa-question-circle"></i> Help';
-        helpBtn.addEventListener('click', showKeyboardShortcuts);
-        
-        const editorActions = document.querySelector('.editor-actions');
-        if (editorActions) {
-            editorActions.appendChild(debugBtn);
-            editorActions.appendChild(forceSaveBtn);
-            editorActions.appendChild(helpBtn);
-        }
-    }
-    
-    // ===========================================
-    // AUTHENTICATION & UI
-    // ===========================================
-    async function checkLoginStatus() {
-        const user = await api.checkAuth();
-        
-        if (user) {
-            loginPrompt.classList.add('hidden');
-            usernameDisplay.textContent = user.username;
+
+   
+    //  5. TABS
+   
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+    });
+
+    function switchTab(tab) {
+        currentTab = tab;
+        tabButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tab));
+        if (tab === 'public') {
+            publicSection.classList.remove('hidden');
+            mySection.classList.add('hidden');
+            loadPublicBoards();
         } else {
-            usernameDisplay.textContent = '';
-            loginPrompt.classList.remove('hidden');
-        }
-        
-        // Load appropriate boards based on current tab
-        if (currentTab === 'public') {
-            await loadPublicBoards();
-        } else if (currentTab === 'my-boards' && user) {
-            await loadUserBoards();
+            publicSection.classList.add('hidden');
+            mySection.classList.remove('hidden');
+            loadMyBoards();
         }
     }
-    
-    async function switchTab(tabName) {
-        currentTab = tabName;
-        
-        // Update tab buttons
-        tabButtons.forEach(tab => {
-            tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
-        });
-        
-        const user = await api.checkAuth();
-        
-        if (tabName === 'my-boards') {
-            if (user) {
-                myBoardsSection.classList.remove('hidden');
-                publicBoardsSection.classList.add('hidden');
-                loginPrompt.classList.add('hidden');
-                await loadUserBoards();
-            } else {
-                loginPrompt.classList.remove('hidden');
-                publicBoardsSection.classList.add('hidden');
-                myBoardsSection.classList.add('hidden');
-            }
-        } else {
-            publicBoardsSection.classList.remove('hidden');
-            myBoardsSection.classList.add('hidden');
-            loginPrompt.classList.add('hidden');
-            await loadPublicBoards();
-        }
-    }
-    
-    // ===========================================
-    // BOARD MANAGEMENT - FIXED OPENBOARD FUNCTION
-    // ===========================================
+
+
+    //  6. BOARD LIST + PREVIEWS
+
     async function loadPublicBoards() {
+        publicGrid.innerHTML = loadingHTML('Loading public boards…');
         try {
-            publicBoardsGrid.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p>Loading public boards...</p></div>';
-            
             const boards = await api.getPublicBoards();
-            
-            if (boards.length === 0) {
-                publicBoardsGrid.innerHTML = `
-                    <div class="empty-boards">
-                        <p>No public boards yet. Be the first to create one!</p>
-                        <button class="primary-btn" style="margin-top: 1rem;">Create Public Board</button>
-                    </div>
-                `;
-                publicBoardsGrid.querySelector('.primary-btn').addEventListener('click', createNewBoard);
-                return;
-            }
-            
-            renderBoards(boards, publicBoardsGrid, false);
-        } catch (error) {
-            publicBoardsGrid.innerHTML = `
-                <div class="error-message">
-                    <p>Error loading public boards</p>
-                    <p>${error.message}</p>
-                </div>
-            `;
+            renderBoardList(boards, publicGrid, false);
+        } catch (e) {
+            console.error(e);
+            publicGrid.innerHTML = errorHTML('Could not load public boards.');
         }
     }
-    
-    async function loadUserBoards() {
+
+    async function loadMyBoards() {
+        myGrid.innerHTML = loadingHTML('Loading your boards…');
         try {
-            myBoardsGrid.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p>Loading your boards...</p></div>';
-            
             const boards = await api.getUserBoards();
-            
-            if (boards.length === 0) {
-                myBoardsGrid.innerHTML = `
-                    <div class="empty-boards">
-                        <p>You don't have any boards yet.</p>
-                        <button id="create-first-board" class="primary-btn" style="margin-top: 1rem;">Create Your First Board</button>
-                    </div>
-                `;
-                
-                document.getElementById('create-first-board')?.addEventListener('click', createNewBoard);
-                return;
-            }
-            
-            renderBoards(boards, myBoardsGrid, true);
-        } catch (error) {
-            myBoardsGrid.innerHTML = `
-                <div class="error-message">
-                    <p>Error loading your boards</p>
-                    <p>${error.message}</p>
-                </div>
-            `;
+            renderBoardList(boards, myGrid, true);
+        } catch (e) {
+            console.error(e);
+            myGrid.innerHTML = errorHTML('Could not load your boards.');
         }
     }
-    
-    function renderBoards(boards, container, isEditable) {
+
+    const loadingHTML = t => `<div class="loading-spinner"><div class="spinner"></div><p>${t}</p></div>`;
+    const errorHTML   = t => `<div class="error-message"><p>${t}</p></div>`;
+
+    function emptyHTML(text, id, label) {
+        return `<div class="empty-boards"><p>${text}</p>
+                <button class="primary-btn" id="${id}">${label}</button></div>`;
+    }
+
+    function renderBoardList(boards, container, editable) {
         container.innerHTML = '';
-        
-        boards.forEach(board => {
-            const boardElement = document.createElement('div');
-            boardElement.className = 'board-card';
-            boardElement.setAttribute('data-id', board._id);
-            
-            const elementCount = board.elements?.length || 0;
-            const previewText = elementCount === 0 ? 'Empty board' : 
-                               elementCount === 1 ? '1 item' : 
-                               `${elementCount} items`;
-            
-            boardElement.innerHTML = `
-                <div class="board-thumbnail">
-                    <div style="text-align: center;">
-                        <i class="fas fa-palette" style="font-size: 2.5rem; margin-bottom: 0.5rem;"></i>
-                        <p style="font-size: 1rem;">${previewText}</p>
-                    </div>
-                </div>
-                <div class="board-info">
-                    <div class="board-title">${board.title || 'Untitled Board'}</div>
-                    <div class="board-meta">
-                        <span>${formatDate(board.updatedAt || board.createdAt)}</span>
-                        ${isEditable ? `<span class="board-visibility ${board.visibility || 'private'}">${board.visibility || 'private'}</span>` : ''}
-                        ${!isEditable && board.owner ? `<span class="board-author">by ${board.owner.username}</span>` : ''}
-                    </div>
-                </div>
-            `;
-            
-            boardElement.addEventListener('click', () => openBoard(board._id, isEditable));
-            container.appendChild(boardElement);
-        });
-    }
-    
-    function formatDate(dateString) {
-        if (!dateString) return 'Recently';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 0) return 'Today';
-        if (diffDays === 1) return 'Yesterday';
-        if (diffDays < 7) return `${diffDays} days ago`;
-        if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-        
-        return date.toLocaleDateString();
-    }
-    
-    async function createNewBoard() {
-        const user = await api.checkAuth();
-        
-        if (!user) {
-            loginModal.style.display = 'block';
+        if (!boards || boards.length === 0) {
+            if (editable) {
+                container.innerHTML = emptyHTML("You don't have any boards yet.", 'empty-mine', 'Create your first board');
+                document.getElementById('empty-mine')?.addEventListener('click', createBoard);
+            } else {
+                container.innerHTML = emptyHTML('No public boards yet. Be the first!', 'empty-public', 'Create a public board');
+                document.getElementById('empty-public')?.addEventListener('click', createBoard);
+            }
             return;
         }
-        
-        const title = prompt('Enter a title for your new board:', 'My Inspiration Board');
-        if (!title || title.trim() === '') return;
-        
-        try {
-            console.log('🎨 Creating board with title:', title);
-            const newBoard = await api.createBoard(title.trim());
-            console.log('✅ Board created:', newBoard);
-            
-            // Switch to my-boards tab if not already there
-            if (currentTab !== 'my-boards') {
-                await switchTab('my-boards');
-            } else {
-                await loadUserBoards();
-            }
-            
-            // Open the new board
-            await openBoard(newBoard._id, true);
-        } catch (error) {
-            console.error('❌ Create board error:', error);
-            alert(`Failed to create board: ${error.message}`);
-        }
+        boards.forEach(b => container.appendChild(makeBoardCard(b, editable)));
     }
-    
-    // ===========================================
-    // FIXED: OPEN BOARD FUNCTION - visibility dropdown should work
-    // ===========================================
-    async function openBoard(boardId, editable) {
-        try {
-            console.log('📖 Opening board:', boardId);
-            const board = await api.getBoard(boardId);
-            currentBoard = board;
-            
-            console.log('📋 Board loaded:', {
-                id: board._id,
-                title: board.title,
-                visibility: board.visibility,
-                elements: board.elements?.length || 0
-            });
-            
-            // Show editor, hide other sections
-            boardEditor.classList.remove('hidden');
-            publicBoardsSection.classList.add('hidden');
-            myBoardsSection.classList.add('hidden');
-            loginPrompt.classList.add('hidden');
-            
-            // Set board info
-            document.getElementById('board-title').textContent = board.title || 'Untitled Board';
-            
-            // Set visibility - CRITICAL FIX: Always set this
-            if (board.visibility) {
-                boardVisibility.value = board.visibility;
-            } else {
-                boardVisibility.value = 'private';
-            }
-            
-            console.log('👁️ Visibility dropdown set to:', boardVisibility.value);
-            console.log('👁️ Board visibility from API:', board.visibility);
-            
-            // Check if user is owner
-            const user = await api.checkAuth();
-            let isOwner = false;
-            
-            if (user && board.owner) {
-                // Check both possible formats of owner ID
-                if (typeof board.owner === 'object') {
-                    isOwner = board.owner._id === user.id;
-                } else {
-                    isOwner = board.owner === user.id;
-                }
-            }
-            
-            console.log('👤 Ownership check:', {
-                user: user?.username,
-                boardOwner: board.owner,
-                isOwner: isOwner,
-                editable: editable
-            });
-            
-            // FIXED: Set edit permissions - ONLY disable if viewing shared board
-            saveBoardBtn.disabled = !editable;
-            boardVisibility.disabled = !editable;
-            
-            // Update share section immediately
-            updateShareSection();
-            
-            // Load board elements
-            loadBoardElements(editable);
-            
-            // Reset selected element
-            selectedElement = null;
-            updateTextToolbar(null);
-            
-            // Scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            console.log('✅ Board opened successfully');
-            console.log('🔧 Permissions:', {
-                saveBtnDisabled: saveBoardBtn.disabled,
-                visibilityDisabled: boardVisibility.disabled,
-                canEdit: editable
-            });
-            
-        } catch (error) {
-            console.error('❌ Failed to open board:', error);
-            alert(`Failed to open board: ${error.message}`);
-        }
-    }
-    
-    function loadBoardElements(editable) {
-        boardCanvas.innerHTML = '';
-        
-        // Set background
-        if (currentBoard.backgroundColor) {
-            boardCanvas.style.backgroundColor = currentBoard.backgroundColor;
-            backgroundColorPicker.value = currentBoard.backgroundColor;
+
+    function makeBoardCard(board, editable) {
+        const card = document.createElement('div');
+        card.className = 'board-card';
+
+        const thumb = document.createElement('div');
+        thumb.className = 'board-thumbnail';
+
+        if (board.elements && board.elements.length) {
+            renderPreview(board, thumb);
         } else {
-            boardCanvas.style.backgroundColor = '#f9f9f9';
-            backgroundColorPicker.value = '#f9f9f9';
+            thumb.innerHTML = `<div class="board-thumbnail-empty">
+                <i class="fas fa-palette"></i><p>Empty board</p></div>`;
         }
-        
-        // Load elements
-        if (currentBoard.elements && currentBoard.elements.length > 0) {
-            console.log(`🖼️ Loading ${currentBoard.elements.length} elements`);
-            currentBoard.elements.forEach(element => {
-                const elementDiv = createElementDiv(element, editable);
-                boardCanvas.appendChild(elementDiv);
-            });
-        } else if (editable) {
-            console.log('📝 Adding welcome text for empty board');
-            addElementToBoard('text');
+
+        const info = document.createElement('div');
+        info.className = 'board-info';
+
+        const title = document.createElement('div');
+        title.className = 'board-title';
+        title.textContent = board.title || 'Untitled Board';
+
+        const meta = document.createElement('div');
+        meta.className = 'board-meta';
+
+        const dateSpan = document.createElement('span');
+        dateSpan.textContent = formatDate(board.updatedAt || board.createdAt);
+        meta.appendChild(dateSpan);
+
+        if (editable && board.visibility) {
+            const vis = document.createElement('span');
+            vis.className = 'board-visibility ' + board.visibility;
+            vis.textContent = board.visibility;
+            meta.appendChild(vis);
+        } else if (!editable && board.owner) {
+            const a = document.createElement('span');
+            a.className = 'board-author';
+            a.textContent = 'by ' + (typeof board.owner === 'object' ? board.owner.username : 'Anonymous');
+            meta.appendChild(a);
         }
+
+        info.appendChild(title);
+        info.appendChild(meta);
+        card.appendChild(thumb);
+        card.appendChild(info);
+        card.addEventListener('click', () => openBoard(board._id));
+        return card;
     }
-    
-    function createElementDiv(element, editable) {
-        const div = document.createElement('div');
-        div.className = 'draggable';
-        div.setAttribute('data-id', element.id || element._id);
-        div.style.left = `${element.x || 50}px`;
-        div.style.top = `${element.y || 50}px`;
-        div.style.zIndex = element.zIndex || 1;
-        
-        // Set width and height with units
-        const width = typeof element.width === 'number' ? `${element.width}px` : element.width || '200px';
-        const height = typeof element.height === 'number' ? `${element.height}px` : element.height || '200px';
-        div.style.width = width;
-        div.style.height = height;
-        
-        switch (element.type) {
+
+    function renderPreview(board, thumbEl) {
+        const inner = document.createElement('div');
+        inner.className = 'board-thumbnail-inner';
+        inner.style.width  = LOGICAL_W + 'px';
+        inner.style.height = LOGICAL_H + 'px';
+        inner.style.background = board.backgroundColor || DEFAULT_BG;
+        inner.style.transformOrigin = 'top left';
+
+        requestAnimationFrame(() => {
+            const w = thumbEl.clientWidth || 300;
+            inner.style.transform = `scale(${w / LOGICAL_W})`;
+        });
+
+        (board.elements || []).forEach(el => inner.appendChild(buildPreviewElement(el)));
+        thumbEl.appendChild(inner);
+    }
+
+    function buildPreviewElement(el) {
+        const d = document.createElement('div');
+        d.style.position = 'absolute';
+        d.style.left   = (el.x || 0) + 'px';
+        d.style.top    = (el.y || 0) + 'px';
+        d.style.width  = (typeof el.width === 'number' ? el.width : parseFloat(el.width) || 200) + 'px';
+        d.style.height = (typeof el.height === 'number' ? el.height : parseFloat(el.height) || 200) + 'px';
+        d.style.zIndex = el.zIndex || 1;
+        d.style.overflow = 'hidden';
+
+        switch (el.type) {
             case 'text':
-                div.className += ' draggable-text';
-                if (editable) {
-                    div.contentEditable = true;
-                    div.spellcheck = false;
-                }
-                div.textContent = element.content || 'Double click to edit';
-                
-                // Apply text styles
-                div.style.fontFamily = element.fontFamily || 'Merriweather';
-                div.style.fontSize = `${element.fontSize || 16}px`;
-                div.style.color = element.color || '#000000';
-                div.style.backgroundColor = element.backgroundColor || 'rgba(255, 255, 255, 0.95)';
-                div.style.fontWeight = element.fontWeight || 'normal';
-                div.style.fontStyle = element.fontStyle || 'normal';
-                div.style.textDecoration = element.textDecoration || 'none';
-                div.style.textAlign = element.textAlign || 'left';
-                div.style.lineHeight = '1.4';
-                div.style.overflow = 'auto';
-                
+                d.style.color = el.color || '#2f2a3a';
+                d.style.fontFamily = el.fontFamily || 'Merriweather, serif';
+                d.style.fontSize = (el.fontSize || 28) + 'px';
+                d.style.fontWeight = el.fontWeight || 'normal';
+                d.style.fontStyle = el.fontStyle || 'normal';
+                d.style.textDecoration = el.textDecoration || 'none';
+                d.style.textAlign = el.textAlign || 'left';
+                d.style.background = el.backgroundColor || 'transparent';
+                d.style.lineHeight = '1.3';
+                d.style.padding = '4px 6px';
+                d.style.whiteSpace = 'pre-wrap';
+                d.style.wordBreak = 'break-word';
+                d.textContent = el.content || '';
                 break;
-                
             case 'image':
-            case 'gif':
+            case 'gif': {
                 const img = document.createElement('img');
-                img.src = element.content || 'https://via.placeholder.com/200';
+                img.src = el.content || '';
                 img.style.width = '100%';
                 img.style.height = '100%';
                 img.style.objectFit = 'contain';
-                div.appendChild(img);
+                d.appendChild(img);
                 break;
-                
-            case 'sticker':
-                div.className += ' draggable-sticker';
-                div.innerHTML = element.content || '⭐';
-                div.style.fontSize = '3rem';
-                div.style.display = 'flex';
-                div.style.justifyContent = 'center';
-                div.style.alignItems = 'center';
-                break;
-                
-            case 'music':
-                div.className += ' draggable-music';
-                
-                // Add drag handle
-                const dragHandle = document.createElement('div');
-                dragHandle.className = 'music-drag-handle';
-                dragHandle.innerHTML = '<i class="fas fa-arrows-alt"></i>';
-                div.appendChild(dragHandle);
-                
-                if (element.content && (element.content.includes('spotify') || element.content.includes('embed'))) {
-                    // Clean up Spotify URL
-                    let spotifyUrl = element.content;
-                    if (spotifyUrl.includes('spotify.com/track/')) {
-                        const trackId = spotifyUrl.split('track/')[1]?.split('?')[0];
-                        if (trackId) {
-                            spotifyUrl = `https://open.spotify.com/embed/track/${trackId}`;
-                        }
-                    }
-                    
-                    // Create a container for the iframe
-                    const iframeContainer = document.createElement('div');
-                    iframeContainer.style.width = '100%';
-                    iframeContainer.style.height = 'calc(100% - 40px)';
-                    iframeContainer.style.position = 'absolute';
-                    iframeContainer.style.bottom = '0';
-                    iframeContainer.style.left = '0';
-                    
-                    const iframe = document.createElement('iframe');
-                    iframe.src = spotifyUrl;
-                    iframe.width = '100%';
-                    iframe.height = '100%';
-                    iframe.frameBorder = '0';
-                    iframe.allowtransparency = 'true';
-                    iframe.allow = 'encrypted-media';
-                    iframe.style.pointerEvents = 'none';
-                    
-                    iframeContainer.appendChild(iframe);
-                    div.appendChild(iframeContainer);
-                } else {
-                    div.innerHTML = `
-                        <div class="music-placeholder">
-                            <i class="fas fa-music"></i>
-                            <p>${element.content || 'Music Track'}</p>
-                            <small>Drag from the top bar</small>
-                        </div>
-                    `;
-                }
-                break;
-                
-            case 'shape':
-                div.className += ' draggable-shape';
-                div.style.backgroundColor = element.color || '#CBB0FF';
-                if (element.shape === 'circle') {
-                    div.classList.add('circle');
-                }
-                break;
-        }
-        
-        // Add controls for editable elements
-        if (editable) {
-            const controls = document.createElement('div');
-            controls.className = 'draggable-controls';
-            controls.innerHTML = `
-                <button class="bring-forward" title="Bring Forward"><i class="fas fa-arrow-up"></i></button>
-                <button class="send-backward" title="Send Backward"><i class="fas fa-arrow-down"></i></button>
-                <button class="delete-element" title="Delete"><i class="fas fa-times"></i></button>
-            `;
-            div.appendChild(controls);
-            
-            const resizeHandle = document.createElement('div');
-            resizeHandle.className = 'resize-handle';
-            div.appendChild(resizeHandle);
-            
-            makeElementInteractive(div);
-            
-            // Add click handler for selection
-            div.addEventListener('click', (e) => {
-                if (e.target.closest('.draggable-controls') || e.target.classList.contains('resize-handle')) return;
-                selectElement(div);
-            });
-        }
-        
-        return div;
-    }
-    
-    // ===========================================
-    // ELEMENT INTERACTION & DRAGGING
-    // ===========================================
-    function makeElementInteractive(element) {
-        // Make draggable
-        element.addEventListener('mousedown', startDrag);
-        element.addEventListener('touchstart', startDragTouch, { passive: false });
-        
-        // Make text elements editable on double click
-        if (element.classList.contains('draggable-text')) {
-            element.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                selectElement(element);
-                element.focus();
-            });
-            
-            element.addEventListener('blur', () => {
-                scheduleAutoSave();
-            });
-        }
-        
-        // Add resize handle functionality
-        const resizeHandle = element.querySelector('.resize-handle');
-        if (resizeHandle) {
-            resizeHandle.addEventListener('mousedown', startResize);
-            resizeHandle.addEventListener('touchstart', startResizeTouch, { passive: false });
-        }
-    }
-    
-    function selectElement(element) {
-        // Deselect previous element
-        if (selectedElement) {
-            selectedElement.classList.remove('selected');
-        }
-        
-        // Select new element
-        selectedElement = element;
-        element.classList.add('selected');
-        
-        // Update toolbar if it's a text element
-        if (element.classList.contains('draggable-text')) {
-            updateTextToolbar(element);
-        } else {
-            updateTextToolbar(null);
-        }
-    }
-    
-    function startDrag(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const element = e.currentTarget;
-        
-        // Special handling for music elements
-        if (element.classList.contains('draggable-music')) {
-            // Check if we clicked on the drag handle
-            const dragHandle = element.querySelector('.music-drag-handle');
-            if (!dragHandle.contains(e.target) && e.target !== dragHandle) {
-                // Only allow dragging from the drag handle for music elements
-                return;
             }
-        }
-        
-        if (e.target.closest('.draggable-controls') || e.target.classList.contains('resize-handle')) {
-            return;
-        }
-        
-        selectElement(element);
-        
-        isDragging = true;
-        currentElement = element;
-        
-        const rect = element.getBoundingClientRect();
-        const canvasRect = boardCanvas.getBoundingClientRect();
-        
-        if (e.type === 'mousedown') {
-            startX = e.clientX;
-            startY = e.clientY;
-        } else if (e.touches) {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        }
-        
-        startLeft = rect.left - canvasRect.left;
-        startTop = rect.top - canvasRect.top;
-        
-        // Show drag overlay
-        dragOverlay.classList.add('active');
-        
-        // Add event listeners
-        document.addEventListener('mousemove', dragElement);
-        document.addEventListener('mouseup', stopDrag);
-        document.addEventListener('touchmove', dragElementTouch, { passive: false });
-        document.addEventListener('touchend', stopDrag);
-    }
-    
-    function startDragTouch(e) {
-        startDrag(e);
-    }
-    
-    function dragElement(e) {
-        if (!isDragging || !currentElement) return;
-        
-        let clientX, clientY;
-        if (e.type === 'mousemove') {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        } else if (e.touches) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        }
-        
-        const canvasRect = boardCanvas.getBoundingClientRect();
-        const deltaX = clientX - startX;
-        const deltaY = clientY - startY;
-        
-        let newLeft = startLeft + deltaX;
-        let newTop = startTop + deltaY;
-        
-        // Constrain to canvas bounds
-        const maxLeft = canvasRect.width - currentElement.offsetWidth;
-        const maxTop = canvasRect.height - currentElement.offsetHeight;
-        
-        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-        newTop = Math.max(0, Math.min(newTop, maxTop));
-        
-        currentElement.style.left = `${newLeft}px`;
-        currentElement.style.top = `${newTop}px`;
-        
-        // Update drag overlay position
-        dragOverlay.style.left = `${clientX - 50}px`;
-        dragOverlay.style.top = `${clientY - 50}px`;
-    }
-    
-    function dragElementTouch(e) {
-        dragElement(e);
-    }
-    
-    function stopDrag() {
-        if (!isDragging) return;
-        
-        isDragging = false;
-        
-        // Hide drag overlay
-        dragOverlay.classList.remove('active');
-        
-        // Remove event listeners
-        document.removeEventListener('mousemove', dragElement);
-        document.removeEventListener('mouseup', stopDrag);
-        document.removeEventListener('touchmove', dragElementTouch);
-        document.removeEventListener('touchend', stopDrag);
-        
-        // Schedule auto-save
-        scheduleAutoSave();
-    }
-    
-    function startResize(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        isResizing = true;
-        currentElement = e.currentTarget.parentElement;
-        
-        const rect = currentElement.getBoundingClientRect();
-        startWidth = rect.width;
-        startHeight = rect.height;
-        
-        if (e.type === 'mousedown') {
-            startX = e.clientX;
-            startY = e.clientY;
-        } else if (e.touches) {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        }
-        
-        // Add a visual indicator for resizing
-        currentElement.style.border = '2px dashed #CBB0FF';
-        
-        document.addEventListener('mousemove', resizeElement);
-        document.addEventListener('mouseup', stopResize);
-        document.addEventListener('touchmove', resizeElementTouch, { passive: false });
-        document.addEventListener('touchend', stopResize);
-    }
-    
-    function startResizeTouch(e) {
-        startResize(e);
-    }
-    
-    function resizeElement(e) {
-        if (!isResizing || !currentElement) return;
-        
-        let clientX, clientY;
-        if (e.type === 'mousemove') {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        } else if (e.touches) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        }
-        
-        const deltaX = clientX - startX;
-        const deltaY = clientY - startY;
-        
-        const newWidth = Math.max(50, startWidth + deltaX);
-        const newHeight = Math.max(50, startHeight + deltaY);
-        
-        currentElement.style.width = `${newWidth}px`;
-        currentElement.style.height = `${newHeight}px`;
-    }
-    
-    function resizeElementTouch(e) {
-        resizeElement(e);
-    }
-    
-    function stopResize() {
-        isResizing = false;
-        
-        if (currentElement) {
-            currentElement.style.border = '';
-        }
-        
-        document.removeEventListener('mousemove', resizeElement);
-        document.removeEventListener('mouseup', stopResize);
-        document.removeEventListener('touchmove', resizeElementTouch);
-        document.removeEventListener('touchend', stopResize);
-        
-        scheduleAutoSave();
-    }
-    
-    // ===========================================
-    // BOARD EDITING TOOLS
-    // ===========================================
-    function addElementToBoard(type) {
-        if (!currentBoard) return;
-        
-        const elementId = 'element_' + Date.now();
-        let elementData = {
-            id: elementId,
-            type: type,
-            x: Math.random() * 200 + 50,
-            y: Math.random() * 200 + 50,
-            zIndex: 1,
-            width: 200,
-            height: type === 'text' ? 'auto' : 200
-        };
-        
-        switch (type) {
-            case 'text':
-                elementData.content = 'Double click to edit';
-                elementData.fontFamily = 'Merriweather';
-                elementData.fontSize = 16;
-                elementData.color = '#000000';
-                elementData.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-                elementData.textAlign = 'left';
-                elementData.width = 250;
-                elementData.height = 'auto';
-                break;
             case 'sticker':
-                const stickers = ['⭐', '❤️', '🌸', '✨', '😊', '🌈', '🎨', '🎵', '📚', '🌻'];
-                elementData.content = stickers[Math.floor(Math.random() * stickers.length)];
-                elementData.width = 100;
-                elementData.height = 100;
+                d.style.display = 'flex';
+                d.style.alignItems = 'center';
+                d.style.justifyContent = 'center';
+                d.style.fontSize = '64px';
+                d.textContent = el.content || '⭐';
                 break;
             case 'music':
-                spotifyModal.style.display = 'block';
-                return;
-            case 'image':
-                imageUpload.click();
-                return;
-            case 'gif':
-                gifUpload.click();
-                return;
+                d.style.background = '#f0eaff';
+                d.style.borderRadius = '8px';
+                d.style.display = 'flex';
+                d.style.alignItems = 'center';
+                d.style.justifyContent = 'center';
+                d.style.color = '#7a5fd1';
+                d.innerHTML = '<i class="fas fa-music" style="font-size:32px"></i>';
+                break;
             case 'shape':
-                elementData.color = '#CBB0FF';
-                elementData.shape = Math.random() > 0.5 ? 'circle' : 'rectangle';
-                elementData.width = 150;
-                elementData.height = 150;
+                d.style.background = el.color || '#CBB0FF';
+                d.style.borderRadius = el.shape === 'circle' ? '50%' : '8px';
                 break;
         }
-        
-        if (!currentBoard.elements) currentBoard.elements = [];
-        currentBoard.elements.push(elementData);
-        
-        const elementDiv = createElementDiv(elementData, true);
-        boardCanvas.appendChild(elementDiv);
-        
-        if (type === 'text') {
-            selectElement(elementDiv);
-            setTimeout(() => {
-                elementDiv.focus();
-                // Place cursor at end
-                const range = document.createRange();
-                const selection = window.getSelection();
-                range.selectNodeContents(elementDiv);
-                range.collapse(false);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            }, 100);
-        } else {
-            selectElement(elementDiv);
-        }
-        
-        scheduleAutoSave();
+        return d;
     }
-    
-    // ===========================================
-    // SAVING & AUTO-SAVE
-    // ===========================================
-    function scheduleAutoSave() {
-        if (autoSaveTimeout) {
-            clearTimeout(autoSaveTimeout);
-        }
-        
-        autoSaveTimeout = setTimeout(async () => {
-            await saveBoard(true); // Auto-save
-        }, 1000); // 1 second delay
-    }
-    
-    async function saveBoard(isAutoSave = false) {
-        if (!currentBoard) {
-            console.error('❌ No board to save');
-            return;
-        }
-        
-        console.log('💾 SAVE PROCESS STARTED:');
-        console.log('Board ID:', currentBoard._id);
-        console.log('Current user:', api.getCurrentUser());
-        console.log('Token in localStorage:', localStorage.getItem('hope_token'));
-        
-        // Collect ALL elements data
-        const elements = [];
-        const draggables = document.querySelectorAll('.draggable');
-        
-        console.log(`📦 Found ${draggables.length} elements to save`);
-        
-        draggables.forEach((draggable, index) => {
-            const elementId = draggable.getAttribute('data-id');
-            
-            const elementData = {
-                id: elementId,
-                type: draggable.classList.contains('draggable-text') ? 'text' :
-                      draggable.classList.contains('draggable-sticker') ? 'sticker' :
-                      draggable.classList.contains('draggable-music') ? 'music' :
-                      draggable.classList.contains('draggable-shape') ? 'shape' : 'image',
-                x: parseInt(draggable.style.left) || 0,
-                y: parseInt(draggable.style.top) || 0,
-                zIndex: parseInt(draggable.style.zIndex) || 1,
-                width: parseInt(draggable.offsetWidth) || 200,
-                height: parseInt(draggable.offsetHeight) || 200
-            };
-            
-            // Type-specific data
-            if (elementData.type === 'text') {
-                elementData.content = draggable.textContent || 'Double click to edit';
-                elementData.fontFamily = draggable.style.fontFamily || 'Merriweather';
-                elementData.fontSize = parseInt(draggable.style.fontSize) || 16;
-                elementData.color = draggable.style.color || '#000000';
-                elementData.backgroundColor = draggable.style.backgroundColor || 'rgba(255, 255, 255, 0.95)';
-                elementData.fontWeight = draggable.style.fontWeight || 'normal';
-                elementData.fontStyle = draggable.style.fontStyle || 'normal';
-                elementData.textDecoration = draggable.style.textDecoration || 'none';
-                elementData.textAlign = draggable.style.textAlign || 'left';
-            } else if (elementData.type === 'image' || elementData.type === 'gif') {
-                const img = draggable.querySelector('img');
-                elementData.content = img ? img.src : '';
-            } else if (elementData.type === 'sticker') {
-                elementData.content = draggable.innerHTML || '⭐';
-            } else if (elementData.type === 'music') {
-                const iframe = draggable.querySelector('iframe');
-                elementData.content = iframe ? iframe.src : 'Custom Music';
-            } else if (elementData.type === 'shape') {
-                elementData.color = draggable.style.backgroundColor || '#CBB0FF';
-                elementData.shape = draggable.classList.contains('circle') ? 'circle' : 'rectangle';
-            }
-            
-            elements.push(elementData);
-        });
-        
-        const boardData = {
-            title: document.getElementById('board-title').textContent,
-            visibility: boardVisibility.value,
-            backgroundColor: boardCanvas.style.backgroundColor || '#f9f9f9',
-            elements: elements
-        };
-        
-        console.log('📤 Data to save:', {
-            title: boardData.title,
-            visibility: boardData.visibility,
-            elementCount: boardData.elements.length,
-            backgroundColor: boardData.backgroundColor
-        });
-        
+
+    function formatDate(dateStr) {
+        if (!dateStr) return 'Recently';
         try {
-            // Update save button state
-            if (!isAutoSave) {
-                saveBoardBtn.classList.add('saving');
-                saveBoardBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                saveBoardBtn.disabled = true;
+            const d = new Date(dateStr);
+            if (isNaN(d)) return 'Recently';
+            const days = Math.floor((Date.now() - d) / 86400000);
+            if (days <= 0) return 'Today';
+            if (days === 1) return 'Yesterday';
+            if (days < 7) return days + ' days ago';
+            if (days < 30) return Math.floor(days / 7) + ' weeks ago';
+            return d.toLocaleDateString();
+        } catch { return 'Recently'; }
+    }
+
+    
+    //  7. CREATE / OPEN
+   
+    createBoardBtn?.addEventListener('click', createBoard);
+    createMyBoardBtn?.addEventListener('click', createBoard);
+
+    async function createBoard() {
+        const title = prompt('Board title:', 'My Inspiration Board');
+        if (!title || !title.trim()) return;
+        try {
+            const board = await api.createBoard(title.trim());
+            if (currentTab !== 'my-boards') {
+                await switchTab('my-boards');
+            } else {
+                await loadMyBoards();
             }
+            await openBoard(board._id);
+        } catch (e) {
+            console.error(e);
+            alert('Could not create board: ' + e.message);
+        }
+    }
+
+    async function openBoard(id) {
+        try {
+            const board = await api.getBoard(id);
+            currentBoard = board;
+
+            publicSection.classList.add('hidden');
+            mySection.classList.add('hidden');
+            editor.classList.remove('hidden');
+
+            boardTitleInput.value = board.title || 'Untitled Board';
+            boardVisibility.value = board.visibility || 'private';
+            bgColorPicker.value = board.backgroundColor || DEFAULT_BG;
+            canvas.style.backgroundColor = board.backgroundColor || DEFAULT_BG;
             
-            const updatedBoard = await api.updateBoard(currentBoard._id, boardData);
-            currentBoard = updatedBoard;
-            lastSaveTime = new Date();
-            
-            console.log('✅ SAVE SUCCESSFUL:', {
-                id: updatedBoard._id,
-                title: updatedBoard.title,
-                visibility: updatedBoard.visibility,
-                elements: updatedBoard.elements?.length || 0
-            });
-            
-            // FIXED: Always update share section after save
+            const isViewOnly = board.visibility === 'public';
+            editor.classList.toggle('view-only', isViewOnly);
+            boardTitleInput.readOnly = isViewOnly;
+
             updateShareSection();
-            
-            if (!isAutoSave) {
-                saveBoardBtn.classList.remove('saving');
-                saveBoardBtn.classList.add('saved');
-                saveBoardBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
-                saveBoardBtn.disabled = false;
-                
-                // Reset button after 2 seconds
-                setTimeout(() => {
-                    saveBoardBtn.classList.remove('saved');
-                    saveBoardBtn.innerHTML = '<i class="fas fa-save"></i> Save';
-                }, 2000);
-            }
-            
-            return updatedBoard;
-        } catch (error) {
-            console.error('❌ SAVE FAILED:', error);
-            
-            if (!isAutoSave) {
-                saveBoardBtn.classList.remove('saving');
-                saveBoardBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Save Failed';
-                saveBoardBtn.disabled = false;
-                
-                setTimeout(() => {
-                    saveBoardBtn.innerHTML = '<i class="fas fa-save"></i> Save';
-                }, 3000);
-                
-                alert(`Save failed: ${error.message}\n\nCheck console for details.`);
-            }
-            throw error;
+
+            canvas.innerHTML = '';
+            (board.elements || []).forEach(el => canvas.appendChild(buildElement(el)));
+
+            requestAnimationFrame(fitCanvas);
+            deselect();
+            updateTextToolbar();
+            setSaveState('idle');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (e) {
+            console.error(e);
+            alert('Could not open board: ' + e.message);
         }
     }
+
+    backBtn?.addEventListener('click', async () => {
+        if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; await saveBoard(); }
+        editor.classList.add('hidden');
+        currentBoard = null;
+        if (currentTab === 'my-boards') {
+            mySection.classList.remove('hidden');
+            loadMyBoards();
+        } else {
+            publicSection.classList.remove('hidden');
+            loadPublicBoards();
+        }
+    });
+
+   
+    //  8. BUILD ELEMENTS
     
-    async function forceSave() {
-        if (!currentBoard) {
-            alert('No board to save');
-            return;
+    function buildElement(el) {
+        const d = document.createElement('div');
+        d.className = 'draggable';
+        d.setAttribute('data-id', el.id || el._id || ('e-' + Date.now() + Math.random()));
+        d.style.left   = (el.x || 0) + 'px';
+        d.style.top    = (el.y || 0) + 'px';
+        d.style.zIndex = el.zIndex || 1;
+
+        const w = typeof el.width === 'number' ? el.width : parseFloat(el.width) || 200;
+        const h = typeof el.height === 'number' ? el.height : parseFloat(el.height) || 200;
+        d.style.width  = w + 'px';
+        d.style.height = h + 'px';
+
+        switch (el.type) {
+            case 'text':
+                d.classList.add('draggable-text');
+                d.contentEditable = 'false';
+                d.style.fontFamily = el.fontFamily || 'Merriweather, serif';
+                d.style.fontSize = (el.fontSize || 28) + 'px';
+                d.style.color = el.color || '#2f2a3a';
+                d.style.background = el.backgroundColor || 'transparent';
+                d.style.fontWeight = el.fontWeight || 'normal';
+                d.style.fontStyle = el.fontStyle || 'normal';
+                d.style.textDecoration = el.textDecoration || 'none';
+                d.style.textAlign = el.textAlign || 'left';
+                d.textContent = el.content || 'Double-click to edit';
+
+                d.addEventListener('dblclick', e => { e.stopPropagation(); enterTextEdit(d); });
+                d.addEventListener('blur', () => {
+                    d.contentEditable = 'false';
+                    scheduleSave();
+                });
+                break;
+
+            case 'image':
+            case 'gif': {
+                const img = document.createElement('img');
+                img.src = el.content || '';
+                img.draggable = false;
+                d.appendChild(img);
+                break;
+            }
+
+            case 'sticker':
+                d.classList.add('draggable-sticker');
+                d.textContent = cleanSticker(el.content);
+            break;
+
+            case 'music': {
+                d.classList.add('draggable-music');
+                const handle = document.createElement('div');
+                handle.className = 'music-drag-handle';
+                handle.innerHTML = '<i class="fas fa-arrows-alt"></i>';
+                d.appendChild(handle);
+
+                if (el.content && el.content.includes('spotify.com')) {
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'music-embed';
+                    iframe.src = normalizeSpotify(el.content);
+                    iframe.loading = 'lazy';
+                    iframe.allow = 'encrypted-media';
+                    d.appendChild(iframe);
+                } else {
+                    const ph = document.createElement('div');
+                    ph.className = 'music-placeholder';
+                    ph.innerHTML = '<i class="fas fa-music"></i><p>Music</p>';
+                    d.appendChild(ph);
+                }
+                break;
+            }
+
+            case 'shape':
+                d.classList.add('draggable-shape');
+                d.style.backgroundColor = el.color || '#CBB0FF';
+                if (el.shape === 'circle') d.classList.add('circle');
+                break;
         }
-        
-        const confirmSave = confirm('Force save current board? This will overwrite any unsaved changes.');
-        if (confirmSave) {
-            await saveBoard(false);
-        }
+
+        // Skip interactive controls if the board is public (view-only mode)
+
+if (!editor.classList.contains('view-only')) {
+    const controls = document.createElement('div');
+    controls.className = 'draggable-controls';
+    controls.innerHTML = `
+        <button class="bring-forward" title="Bring forward"><i class="fas fa-arrow-up"></i></button>
+        <button class="send-backward" title="Send backward"><i class="fas fa-arrow-down"></i></button>
+        <button class="delete-element" title="Delete"><i class="fas fa-trash"></i></button>
+    `;
+    d.appendChild(controls);
+
+    const resize = document.createElement('div');
+    resize.className = 'resize-handle';
+    d.appendChild(resize);
+
+    makeDraggable(d);
+    makeResizable(d, resize);
+}
+return d;
     }
+
+    function normalizeSpotify(url) {
+        if (!url) return url;
+        if (url.includes('/embed/')) return url;
+        const m = url.match(/spotify\.com\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)/);
+        return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}` : url;
+    }
+
+    //  9. SELECTION
     
-    // ===========================================
-    // TEXT FORMATTING
-    // ===========================================
-    function updateTextToolbar(element) {
-        if (!element || !element.classList.contains('draggable-text')) {
-            // Disable toolbar
-            fontFamilySelect.disabled = true;
-            fontSizeInput.disabled = true;
-            fontColorPicker.disabled = true;
-            textBgColorPicker.disabled = true;
-            boldBtn.disabled = italicBtn.disabled = underlineBtn.disabled = true;
-            alignLeftBtn.disabled = alignCenterBtn.disabled = alignRightBtn.disabled = true;
-            return;
+    function selectElement(el) {
+        if (selectedEl === el) return;
+        if (selectedEl) selectedEl.classList.remove('selected');
+        selectedEl = el;
+        if (el) el.classList.add('selected');
+        updateTextToolbar();
+    }
+
+    function deselect() {
+        if (selectedEl) selectedEl.classList.remove('selected');
+        selectedEl = null;
+        updateTextToolbar();
+    }
+
+    canvas.addEventListener('pointerdown', e => {
+        if (e.target === canvas) deselect();
+    });
+
+    
+    // 10. DRAG (pointer events = mouse + touch)
+    
+    function makeDraggable(el) {
+        el.addEventListener('pointerdown', e => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            if (e.target.closest('.draggable-controls')) return;
+            if (e.target.classList.contains('resize-handle')) return;
+            if (el.classList.contains('draggable-text') && el.isContentEditable) return;
+
+            if (el.classList.contains('draggable-music')) {
+                const h = el.querySelector('.music-drag-handle');
+                if (!h || !h.contains(e.target)) return;
+            }
+
+            e.preventDefault();
+            selectElement(el);
+            el.classList.add('dragging');
+            el.setPointerCapture(e.pointerId);
+
+            const start = toLogical(e.clientX, e.clientY);
+            const startLeft = parseFloat(el.style.left) || 0;
+            const startTop  = parseFloat(el.style.top)  || 0;
+
+            const onMove = ev => {
+                const p = toLogical(ev.clientX, ev.clientY);
+                let nl = startLeft + (p.x - start.x);
+                let nt = startTop  + (p.y - start.y);
+                nl = Math.max(0, Math.min(nl, LOGICAL_W - el.offsetWidth));
+                nt = Math.max(0, Math.min(nt, LOGICAL_H - el.offsetHeight));
+                el.style.left = nl + 'px';
+                el.style.top  = nt + 'px';
+            };
+            const onUp = () => {
+                el.classList.remove('dragging');
+                try { el.releasePointerCapture(e.pointerId); } catch {}
+                el.removeEventListener('pointermove', onMove);
+                el.removeEventListener('pointerup', onUp);
+                el.removeEventListener('pointercancel', onUp);
+                scheduleSave();
+            };
+
+            el.addEventListener('pointermove', onMove);
+            el.addEventListener('pointerup', onUp);
+            el.addEventListener('pointercancel', onUp);
+        });
+    }
+
+
+    // 11. RESIZE
+    
+    function makeResizable(el, handle) {
+        handle.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (el.classList.contains('draggable-text') && el.isContentEditable) return;
+
+            selectElement(el);
+            handle.setPointerCapture(e.pointerId);
+
+            const start = toLogical(e.clientX, e.clientY);
+            const startW = el.offsetWidth;
+            const startH = el.offsetHeight;
+
+            const onMove = ev => {
+                const p = toLogical(ev.clientX, ev.clientY);
+                const w = Math.max(30, startW + (p.x - start.x));
+                const h = Math.max(20, startH + (p.y - start.y));
+                el.style.width  = w + 'px';
+                el.style.height = h + 'px';
+            };
+            const onUp = () => {
+                try { handle.releasePointerCapture(e.pointerId); } catch {}
+                handle.removeEventListener('pointermove', onMove);
+                handle.removeEventListener('pointerup', onUp);
+                handle.removeEventListener('pointercancel', onUp);
+                scheduleSave();
+            };
+
+            handle.addEventListener('pointermove', onMove);
+            handle.addEventListener('pointerup', onUp);
+            handle.addEventListener('pointercancel', onUp);
+        });
+    }
+
+    
+    // 12. TEXT EDIT
+ 
+    function enterTextEdit(el) {
+        if (el.isContentEditable) return;
+        el.contentEditable = 'true';
+        el.focus();
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+   
+    // 13. CONTROL BUTTONS
+   
+    canvas.addEventListener('click', e => {
+        const el = e.target.closest('.draggable');
+        if (!el) return;
+
+        if (e.target.closest('.delete-element')) {
+            e.stopPropagation();
+            el.remove();
+            if (selectedEl === el) deselect();
+            scheduleSave();
+        } else if (e.target.closest('.bring-forward')) {
+            e.stopPropagation();
+            el.style.zIndex = (parseInt(el.style.zIndex) || 1) + 1;
+            scheduleSave();
+        } else if (e.target.closest('.send-backward')) {
+            e.stopPropagation();
+            const z = parseInt(el.style.zIndex) || 1;
+            if (z > 1) el.style.zIndex = z - 1;
+            scheduleSave();
         }
-        
-        // Enable toolbar
-        fontFamilySelect.disabled = false;
-        fontSizeInput.disabled = false;
-        fontColorPicker.disabled = false;
-        textBgColorPicker.disabled = false;
-        boldBtn.disabled = italicBtn.disabled = underlineBtn.disabled = false;
-        alignLeftBtn.disabled = alignCenterBtn.disabled = alignRightBtn.disabled = false;
-        
-        // Update values
-        fontFamilySelect.value = element.style.fontFamily || 'Merriweather';
-        fontSizeInput.value = parseInt(element.style.fontSize) || 16;
-        fontColorPicker.value = rgbToHex(element.style.color) || '#000000';
-        textBgColorPicker.value = rgbToHex(element.style.backgroundColor) || '#ffffff';
-        
-        boldBtn.classList.toggle('active', element.style.fontWeight === 'bold');
-        italicBtn.classList.toggle('active', element.style.fontStyle === 'italic');
-        underlineBtn.classList.toggle('active', element.style.textDecoration === 'underline');
-        
-        const align = element.style.textAlign || 'left';
+    });
+
+    
+    // 14. TEXT TOOLBAR
+    
+    function updateTextToolbar() {
+        const isText = selectedEl && selectedEl.classList.contains('draggable-text');
+        textToolbar.classList.toggle('is-disabled', !isText);
+        if (!isText) return;
+
+        const s = selectedEl.style;
+        [...fontFamily.options].forEach(o => {
+            const key = o.value.split(',')[0].replace(/['"]/g, '').trim();
+            if ((s.fontFamily || '').includes(key)) fontFamily.value = o.value;
+        });
+        fontSize.value = parseInt(s.fontSize) || 28;
+        fontColor.value = rgbToHex(s.color) || '#2f2a3a';
+        textBgColor.value = rgbToHex(s.backgroundColor) || '#ffffff';
+
+        boldBtn.classList.toggle('active', s.fontWeight === 'bold');
+        italicBtn.classList.toggle('active', s.fontStyle === 'italic');
+        underlineBtn.classList.toggle('active', (s.textDecoration || '').includes('underline'));
+
+        const align = s.textAlign || 'left';
         alignLeftBtn.classList.toggle('active', align === 'left');
         alignCenterBtn.classList.toggle('active', align === 'center');
         alignRightBtn.classList.toggle('active', align === 'right');
     }
-    
+
     function rgbToHex(rgb) {
-        if (!rgb || rgb === 'transparent') return '#ffffff';
+        if (!rgb || rgb === 'transparent' || rgb === 'rgba(0, 0, 0, 0)') return '#ffffff';
         if (rgb.startsWith('#')) return rgb;
-        
-        const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-        if (match) {
-            const r = parseInt(match[1]).toString(16).padStart(2, '0');
-            const g = parseInt(match[2]).toString(16).padStart(2, '0');
-            const b = parseInt(match[3]).toString(16).padStart(2, '0');
-            return `#${r}${g}${b}`;
-        }
-        return '#ffffff';
+        const m = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        if (!m) return '#ffffff';
+        return '#' + (+m[1]).toString(16).padStart(2, '0')
+                   + (+m[2]).toString(16).padStart(2, '0')
+                   + (+m[3]).toString(16).padStart(2, '0');
     }
-    
-    function applyTextFormatting(property, value) {
-        if (!selectedElement || !selectedElement.classList.contains('draggable-text')) return;
-        
-        if (property === 'fontWeight') {
-            selectedElement.style.fontWeight = selectedElement.style.fontWeight === 'bold' ? 'normal' : 'bold';
-        } else if (property === 'fontStyle') {
-            selectedElement.style.fontStyle = selectedElement.style.fontStyle === 'italic' ? 'normal' : 'italic';
-        } else if (property === 'textDecoration') {
-            selectedElement.style.textDecoration = selectedElement.style.textDecoration === 'underline' ? 'none' : 'underline';
-        } else if (property === 'textAlign') {
-            selectedElement.style.textAlign = value;
-        } else {
-            selectedElement.style[property] = value;
-        }
-        
-        updateTextToolbar(selectedElement);
-        scheduleAutoSave();
+
+    function applyTextStyle(prop, value) {
+        if (!selectedEl || !selectedEl.classList.contains('draggable-text')) return;
+        selectedEl.style[prop] = value;
+        updateTextToolbar();
+        scheduleSave();
     }
+
+    fontFamily?.addEventListener('change', () => applyTextStyle('fontFamily', fontFamily.value));
+    fontSize?.addEventListener('input',  () => applyTextStyle('fontSize', fontSize.value + 'px'));
+    fontColor?.addEventListener('input', () => applyTextStyle('color', fontColor.value));
+    textBgColor?.addEventListener('input', () => applyTextStyle('backgroundColor', textBgColor.value));
+    clearBgBtn?.addEventListener('click', () => applyTextStyle('backgroundColor', 'transparent'));
+
+    boldBtn?.addEventListener('click', () => {
+        if (!selectedEl) return;
+        applyTextStyle('fontWeight', selectedEl.style.fontWeight === 'bold' ? 'normal' : 'bold');
+    });
+    italicBtn?.addEventListener('click', () => {
+        if (!selectedEl) return;
+        applyTextStyle('fontStyle', selectedEl.style.fontStyle === 'italic' ? 'normal' : 'italic');
+    });
+    underlineBtn?.addEventListener('click', () => {
+        if (!selectedEl) return;
+        const on = (selectedEl.style.textDecoration || '').includes('underline');
+        applyTextStyle('textDecoration', on ? 'none' : 'underline');
+    });
+    alignLeftBtn?.addEventListener('click',   () => applyTextStyle('textAlign', 'left'));
+    alignCenterBtn?.addEventListener('click', () => applyTextStyle('textAlign', 'center'));
+    alignRightBtn?.addEventListener('click',  () => applyTextStyle('textAlign', 'right'));
+
+
+    // 15. ADD ELEMENT BUTTONS
     
-    // ===========================================
-    // SHARE FUNCTIONALITY - FIXED
-    // ===========================================
-    function updateShareSection() {
-        console.log('🔗 Updating share section. Visibility:', boardVisibility.value);
-        
-        if (currentBoard && boardVisibility.value === 'public') {
-            shareSection.classList.remove('hidden');
-            const shareToken = currentBoard._id;
-            const baseUrl = window.location.origin + window.location.pathname;
-            shareLink.value = `${baseUrl}?share=${shareToken}`;
-            console.log('🔗 Share link generated:', shareLink.value);
-        } else {
-            shareSection.classList.add('hidden');
-            console.log('🔗 Share section hidden (private board)');
-        }
+    addButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!currentBoard) return;
+            const kind = btn.getAttribute('data-add');
+            if (kind === 'image')   return imageUpload.click();
+            if (kind === 'gif')     return gifUpload.click();
+            if (kind === 'sticker') return addSticker();
+            if (kind === 'text')    return addText();
+            if (kind === 'music')   return (spotifyModal.style.display = 'block');
+            if (kind === 'shape')   return addShape();
+        });
+    });
+
+    function addText() {
+        const el = buildElement({
+            id: 'e-' + Date.now(),
+            type: 'text',
+            content: 'New text',
+            x: 80, y: 80, zIndex: 10,
+            width: 320, height: 60,
+            fontFamily: 'Merriweather, serif',
+            fontSize: 32,
+            color: '#2f2a3a',
+            backgroundColor: 'transparent',
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            textDecoration: 'none',
+            textAlign: 'left'
+        });
+        canvas.appendChild(el);
+        selectElement(el);
+        setTimeout(() => enterTextEdit(el), 60);
+        scheduleSave();
     }
-    
-    // ===========================================
-    // FILE UPLOAD HANDLERS
-    // ===========================================
-    function handleImageUpload(e) {
-        handleFileUpload(e, 'image');
+
+    function addSticker() {
+        const stickers = ['⭐','❤️','🌸','✨','😊','🌈','🎨','🎵','📚','🌻','🦋','☀️'];
+        const el = buildElement({
+            id: 'e-' + Date.now(),
+            type: 'sticker',
+            content: stickers[Math.floor(Math.random() * stickers.length)],
+            x: 100, y: 100, zIndex: 5,
+            width: 100, height: 100
+        });
+        canvas.appendChild(el);
+        selectElement(el);
+        scheduleSave();
     }
-    
-    function handleGifUpload(e) {
-        handleFileUpload(e, 'gif');
+
+    function addShape() {
+        const el = buildElement({
+            id: 'e-' + Date.now(),
+            type: 'shape',
+            shape: Math.random() > 0.5 ? 'circle' : 'rect',
+            color: '#CBB0FF',
+            x: 100, y: 100, zIndex: 3,
+            width: 160, height: 160
+        });
+        canvas.appendChild(el);
+        selectElement(el);
+        scheduleSave();
     }
-    
-    function handleFileUpload(e, type) {
-        if (!currentBoard) return;
-        
-        const file = e.target.files[0];
+
+    imageUpload?.addEventListener('change', e => handleFileUpload(e, 'image'));
+    gifUpload?.addEventListener('change',   e => handleFileUpload(e, 'gif'));
+
+    function handleFileUpload(e, kind) {
+        const file = e.target.files && e.target.files[0];
         if (!file) return;
-        
-        // Check file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
-            alert('File too large. Please choose a file smaller than 5MB.');
+            alert('File is too large (max 5 MB).');
             e.target.value = '';
             return;
         }
-        
-        // Check file type
-        const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!validImageTypes.includes(file.type)) {
-            alert('Please select a valid image file (JPEG, PNG, GIF, or WebP).');
-            e.target.value = '';
-            return;
-        }
-        
         const reader = new FileReader();
-        reader.onload = function(event) {
-            const elementId = 'element_' + Date.now();
-            const elementData = {
-                id: elementId,
-                type: type,
-                content: event.target.result,
-                x: Math.random() * 300 + 50,
-                y: Math.random() * 300 + 50,
-                zIndex: 1,
-                width: 200,
-                height: 200
-            };
-            
-            if (!currentBoard.elements) currentBoard.elements = [];
-            currentBoard.elements.push(elementData);
-            
-            const elementDiv = createElementDiv(elementData, true);
-            boardCanvas.appendChild(elementDiv);
-            selectElement(elementDiv);
-            
-            scheduleAutoSave();
+        reader.onload = ev => {
+            const el = buildElement({
+                id: 'e-' + Date.now(),
+                type: kind,
+                content: ev.target.result,
+                x: 80, y: 80, zIndex: 4,
+                width: 260, height: 260
+            });
+            canvas.appendChild(el);
+            selectElement(el);
+            scheduleSave();
         };
-        
-        reader.onerror = function() {
-            alert('Error reading file. Please try again.');
-            e.target.value = '';
-        };
-        
         reader.readAsDataURL(file);
+        e.target.value = '';
     }
+
+    spotifyForm?.addEventListener('submit', e => {
+        e.preventDefault();
+        const url = spotifyLink.value.trim();
+        if (!url) return;
+        const el = buildElement({
+            id: 'e-' + Date.now(),
+            type: 'music',
+            content: url,
+            x: 100, y: 100, zIndex: 6,
+            width: 320, height: 100
+        });
+        canvas.appendChild(el);
+        selectElement(el);
+        spotifyModal.style.display = 'none';
+        spotifyLink.value = '';
+        scheduleSave();
+    });
+
+    document.querySelectorAll('[data-close], .close-modal').forEach(x => {
+        x.addEventListener('click', () => x.closest('.modal').style.display = 'none');
+    });
+    window.addEventListener('click', e => {
+        if (e.target.classList.contains('modal')) e.target.style.display = 'none';
+    });
+
+    bgColorPicker?.addEventListener('input', () => {
+        canvas.style.backgroundColor = bgColorPicker.value;
+        scheduleSave();
+    });
+
     
-    // ===========================================
-    // DELETE CONFIRMATION
-    // ===========================================
-    function showDeleteConfirmation(element) {
-        // Remove any existing confirmation
-        const existingConfirm = document.querySelector('.delete-confirmation');
-        if (existingConfirm) {
-            existingConfirm.remove();
-        }
-        
-        const rect = element.getBoundingClientRect();
-        
-        const confirmation = document.createElement('div');
-        confirmation.className = 'delete-confirmation';
-        confirmation.style.position = 'fixed';
-        confirmation.style.top = `${rect.top - 60}px`;
-        confirmation.style.left = `${rect.left}px`;
-        
-        confirmation.innerHTML = `
-            <p>Delete this element?</p>
-            <div class="delete-confirmation-buttons">
-                <button class="delete-cancel-btn">Cancel</button>
-                <button class="delete-confirm-btn">Delete</button>
-            </div>
-        `;
-        
-        document.body.appendChild(confirmation);
-        
-        // Add event listeners
-        confirmation.querySelector('.delete-confirm-btn').addEventListener('click', () => {
-            const elementId = element.getAttribute('data-id');
-            element.remove();
-            confirmation.remove();
-            
-            if (currentBoard.elements) {
-                currentBoard.elements = currentBoard.elements.filter(el => 
-                    el.id !== elementId && el._id !== elementId
-                );
-            }
-            
-            if (selectedElement === element) {
-                selectedElement = null;
-                updateTextToolbar(null);
-            }
-            
-            scheduleAutoSave();
-        });
-        
-        confirmation.querySelector('.delete-cancel-btn').addEventListener('click', () => {
-            confirmation.remove();
-        });
-        
-        // Close confirmation if clicking outside
-        setTimeout(() => {
-            const closeHandler = (e) => {
-                if (!confirmation.contains(e.target) && e.target.closest('.delete-element') !== element.querySelector('.delete-element')) {
-                    confirmation.remove();
-                    document.removeEventListener('click', closeHandler);
-                }
-            };
-            document.addEventListener('click', closeHandler);
-        }, 100);
+    // 16. SAVE
+    
+    function scheduleSave() {
+        if (!currentBoard) return;
+        setSaveState('pending');
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveBoard, 900);
     }
-    
-    // ===========================================
-    // DEBUG & HELP FUNCTIONS
-    // ===========================================
-    function debugBoardData() {
-        console.log('🔍 BOARD DEBUG INFO:');
-        console.log('Current Board ID:', currentBoard?._id);
-        console.log('Current Visibility (select):', boardVisibility.value);
-        console.log('Board Title:', document.getElementById('board-title')?.textContent);
-        console.log('Canvas Background:', boardCanvas.style.backgroundColor);
-        console.log('Elements on canvas:', document.querySelectorAll('.draggable').length);
-        
-        // Check localStorage
-        console.log('🔑 Token:', localStorage.getItem('hope_token'));
-        console.log('👤 User:', JSON.parse(localStorage.getItem('hope_user') || 'null'));
-        
-        // Test backend
-        fetch('http://localhost:5001/health')
-            .then(r => r.json())
-            .then(health => {
-                console.log('🏥 Backend health:', health);
-            })
-            .catch(e => {
-                console.log('❌ Backend not reachable');
-            });
-        
-        // Show in alert
-        alert(`Debug Info:\n
-Board ID: ${currentBoard?._id || 'None'}
-Visibility: ${boardVisibility.value}
-Elements: ${document.querySelectorAll('.draggable').length}
-User: ${localStorage.getItem('hope_user') ? JSON.parse(localStorage.getItem('hope_user')).username : 'None'}
-Token: ${localStorage.getItem('hope_token') ? 'Present' : 'None'}
-        `);
-    }
-    
-    function showKeyboardShortcuts() {
-        const shortcuts = [
-            { key: 'Delete/Backspace', action: 'Delete selected element' },
-            { key: 'Esc', action: 'Deselect element' },
-            { key: 'Ctrl+S', action: 'Save board' },
-            { key: 'Double-click', action: 'Edit text' },
-            { key: 'Drag handle', action: 'Move element (top bar for music)' },
-            { key: 'Resize handle', action: 'Resize element (bottom-right corner)' }
-        ];
-        
-        let message = '📋 Keyboard & Mouse Shortcuts:\n\n';
-        shortcuts.forEach(shortcut => {
-            message += `• ${shortcut.key}: ${shortcut.action}\n`;
-        });
-        
-        message += '\n💡 Tips:\n';
-        message += '• Click "Force Save" if auto-save fails\n';
-        message += '• Use "Debug" button to check saved data\n';
-        message += '• Spotify: Drag from the top blue bar\n';
-        message += '• Delete: Click trash icon or press Delete key\n';
-        message += '• Save frequently with Ctrl+S or Save button';
-        
-        alert(message);
-    }
-    
-    // ===========================================
-    // EVENT LISTENERS SETUP - FIXED
-    // ===========================================
-    function setupEventListeners() {
-        // Board creation
-        createBoardBtn?.addEventListener('click', createNewBoard);
-        createMyBoardBtn?.addEventListener('click', createNewBoard);
-        
-        // Tab switching
-        tabButtons.forEach(tab => {
-            tab.addEventListener('click', () => switchTab(tab.getAttribute('data-tab')));
-        });
-        
-        // Board editor
-        backToBoardsBtn?.addEventListener('click', async () => {
-            boardEditor.classList.add('hidden');
-            await switchTab(currentTab);
-        });
-        
-        saveBoardBtn?.addEventListener('click', () => saveBoard(false));
-        
-        // Tool buttons
-        toolButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const type = button.getAttribute('data-type');
-                addElementToBoard(type);
-            });
-        });
-        
-        // File uploads
-        imageUpload?.addEventListener('change', handleImageUpload);
-        gifUpload?.addEventListener('change', handleGifUpload);
-        
-        // Text formatting
-        fontFamilySelect?.addEventListener('change', () => {
-            applyTextFormatting('fontFamily', fontFamilySelect.value);
-        });
-        
-        fontSizeInput?.addEventListener('change', () => {
-            applyTextFormatting('fontSize', `${fontSizeInput.value}px`);
-        });
-        
-        fontColorPicker?.addEventListener('input', () => {
-            applyTextFormatting('color', fontColorPicker.value);
-        });
-        
-        textBgColorPicker?.addEventListener('input', () => {
-            applyTextFormatting('backgroundColor', textBgColorPicker.value);
-        });
-        
-        boldBtn?.addEventListener('click', () => applyTextFormatting('fontWeight'));
-        italicBtn?.addEventListener('click', () => applyTextFormatting('fontStyle'));
-        underlineBtn?.addEventListener('click', () => applyTextFormatting('textDecoration'));
-        
-        alignLeftBtn?.addEventListener('click', () => applyTextFormatting('textAlign', 'left'));
-        alignCenterBtn?.addEventListener('click', () => applyTextFormatting('textAlign', 'center'));
-        alignRightBtn?.addEventListener('click', () => applyTextFormatting('textAlign', 'right'));
-        
-        // Background color
-        applyBgColorBtn?.addEventListener('click', () => {
-            boardCanvas.style.backgroundColor = backgroundColorPicker.value;
-            scheduleAutoSave();
-        });
-        
-        // FIXED: Visibility changes - SAVE IMMEDIATELY
-        boardVisibility?.addEventListener('change', async () => {
-            console.log('👁️ Visibility changed to:', boardVisibility.value);
-            
-            // Immediately update the share section
-            updateShareSection();
-            
-            // Save the board with new visibility
-            try {
-                await saveBoard(false);
-                console.log('✅ Visibility saved successfully');
-            } catch (error) {
-                console.error('❌ Failed to save visibility:', error);
-                alert('Failed to update visibility. Please try saving manually.');
-            }
-        });
-        
-        // Share link
-        copyLinkBtn?.addEventListener('click', () => {
-            shareLink.select();
-            shareLink.setSelectionRange(0, 99999);
-            document.execCommand('copy');
-            
-            // Show feedback
-            const originalText = copyLinkBtn.textContent;
-            copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+
+    function setSaveState(state) {
+        if (!saveBtn) return;
+        if (state === 'pending') {
+            saveBtn.classList.remove('saved', 'saving');
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+        } else if (state === 'saving') {
+            saveBtn.classList.remove('saved');
+            saveBtn.classList.add('saving');
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+        } else if (state === 'saved') {
+            saveBtn.classList.remove('saving');
+            saveBtn.classList.add('saved');
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved';
             setTimeout(() => {
-                copyLinkBtn.textContent = originalText;
-            }, 2000);
-        });
-        
-        // Login/Logout
-        loginPromptBtn?.addEventListener('click', () => {
-            loginModal.style.display = 'block';
-        });
-        
-        closeModalBtn?.addEventListener('click', () => {
-            loginModal.style.display = 'none';
-            spotifyModal.style.display = 'none';
-        });
-        
-        window.addEventListener('click', (e) => {
-            if (e.target === loginModal || e.target === spotifyModal) {
-                loginModal.style.display = 'none';
-                spotifyModal.style.display = 'none';
-            }
-        });
-        
-        // Canvas click to deselect
-        boardCanvas?.addEventListener('click', (e) => {
-            if (e.target === boardCanvas) {
-                if (selectedElement) {
-                    selectedElement.classList.remove('selected');
-                    selectedElement = null;
-                    updateTextToolbar(null);
-                }
-            }
-        });
-        
-        // Element deletion
-        boardCanvas?.addEventListener('click', (e) => {
-            if (e.target.closest('.delete-element')) {
-                e.stopPropagation();
-                const element = e.target.closest('.draggable');
-                showDeleteConfirmation(element);
-            }
-            
-            // Layer controls
-            if (e.target.closest('.bring-forward')) {
-                e.stopPropagation();
-                const element = e.target.closest('.draggable');
-                const currentZ = parseInt(element.style.zIndex) || 1;
-                element.style.zIndex = currentZ + 1;
-                
-                const elementId = element.getAttribute('data-id');
-                const elementData = currentBoard.elements?.find(el => 
-                    el.id === elementId || el._id === elementId
-                );
-                if (elementData) elementData.zIndex = currentZ + 1;
-                
-                scheduleAutoSave();
-            }
-            
-            if (e.target.closest('.send-backward')) {
-                e.stopPropagation();
-                const element = e.target.closest('.draggable');
-                const currentZ = parseInt(element.style.zIndex) || 1;
-                if (currentZ > 1) {
-                    element.style.zIndex = currentZ - 1;
-                    
-                    const elementId = element.getAttribute('data-id');
-                    const elementData = currentBoard.elements?.find(el => 
-                        el.id === elementId || el._id === elementId
-                    );
-                    if (elementData) elementData.zIndex = currentZ - 1;
-                    
-                    scheduleAutoSave();
-                }
-            }
-        });
-        
-        // Text content changes
-        boardCanvas?.addEventListener('input', (e) => {
-            if (e.target.classList.contains('draggable-text')) {
-                scheduleAutoSave();
-            }
-        });
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Delete selected element
-            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElement && document.activeElement !== selectedElement) {
-                e.preventDefault();
-                showDeleteConfirmation(selectedElement);
-            }
-            
-            // Save with Ctrl+S
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                e.preventDefault();
-                saveBoard(false);
-            }
-            
-            // Escape to deselect
-            if (e.key === 'Escape' && selectedElement) {
-                selectedElement.classList.remove('selected');
-                selectedElement = null;
-                updateTextToolbar(null);
-            }
-        });
-        
-        loginForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            
-            if (!username) {
-                alert('Please enter a username');
-                return;
-            }
-            
-            try {
-                await api.login(username, password);
-                loginModal.style.display = 'none';
-                await checkLoginStatus();
-                alert(`Welcome ${username}!`);
-            } catch (error) {
-                alert(`Login failed: ${error.message}`);
-            }
-        });
-        
-        logoutBtn?.addEventListener('click', () => {
-            if (confirm('Are you sure you want to logout?')) {
-                api.logout();
-                checkLoginStatus();
-                alert('Logged out successfully');
-            }
-        });
-        
-        // Spotify form
-        spotifyForm?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const link = spotifyLinkInput.value.trim();
-            if (!link) return;
-            
-            // Validate Spotify URL
-            if (!link.includes('spotify.com')) {
-                alert('Please enter a valid Spotify URL');
-                return;
-            }
-            
-            const elementId = 'element_' + Date.now();
-            const elementData = {
-                id: elementId,
-                type: 'music',
-                content: link,
-                x: Math.random() * 300 + 50,
-                y: Math.random() * 300 + 50,
-                zIndex: 1,
-                width: 300,
-                height: 80
-            };
-            
-            if (!currentBoard.elements) currentBoard.elements = [];
-            currentBoard.elements.push(elementData);
-            
-            const elementDiv = createElementDiv(elementData, true);
-            boardCanvas.appendChild(elementDiv);
-            selectElement(elementDiv);
-            
-            spotifyModal.style.display = 'none';
-            spotifyLinkInput.value = '';
-            
-            scheduleAutoSave();
-        });
+                saveBtn.classList.remove('saved');
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+            }, 1500);
+        } else {
+            saveBtn.classList.remove('saving', 'saved');
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+        }
     }
+
+    async function saveBoard() {
+        if (!currentBoard || isSaving) return;
+        isSaving = true;
+        setSaveState('saving');
+
+        const elements = [];
+        canvas.querySelectorAll('.draggable').forEach(d => {
+            const type =
+                d.classList.contains('draggable-text')    ? 'text'    :
+                d.classList.contains('draggable-sticker') ? 'sticker' :
+                d.classList.contains('draggable-music')   ? 'music'   :
+                d.classList.contains('draggable-shape')   ? 'shape'   :
+                (d.querySelector('img') && d.querySelector('img').src.startsWith('data:image/gif')) ? 'gif' :
+                'image';
+
+            const data = {
+                id: d.getAttribute('data-id'),
+                type,
+                x: Math.round(parseFloat(d.style.left) || 0),
+                y: Math.round(parseFloat(d.style.top)  || 0),
+                zIndex: parseInt(d.style.zIndex) || 1,
+                width: d.offsetWidth,
+                height: d.offsetHeight
+            };
+
+            if (type === 'text') {
+                data.content = d.textContent;
+                data.fontFamily = d.style.fontFamily || 'Merriweather, serif';
+                data.fontSize = parseInt(d.style.fontSize) || 28;
+                data.color = d.style.color || '#2f2a3a';
+                data.backgroundColor = d.style.backgroundColor || 'transparent';
+                data.fontWeight = d.style.fontWeight || 'normal';
+                data.fontStyle  = d.style.fontStyle || 'normal';
+                data.textDecoration = d.style.textDecoration || 'none';
+                data.textAlign = d.style.textAlign || 'left';
+            } else if (type === 'image' || type === 'gif') {
+                const img = d.querySelector('img');
+                data.content = img ? img.src : '';
+            } else if (type === 'sticker') {
+                data.content = d.textContent;
+            } else if (type === 'music') {
+                const f = d.querySelector('iframe');
+                data.content = f ? f.src : '';
+            } else if (type === 'shape') {
+                data.color = d.style.backgroundColor || '#CBB0FF';
+                data.shape = d.classList.contains('circle') ? 'circle' : 'rect';
+            }
+
+            elements.push(data);
+        });
+
+        const payload = {
+            title: boardTitleInput.value.trim() || 'Untitled Board',
+            visibility: boardVisibility.value,
+            backgroundColor: canvas.style.backgroundColor || DEFAULT_BG,
+            elements
+        };
+
+                try {
+            const updated = await api.updateBoard(currentBoard._id, payload);
+            currentBoard = updated || { ...currentBoard, ...payload };
+            setSaveState('saved');
+        } catch (e) {
+            console.error('Save failed:', e);
+            setSaveState('idle');
+            if (saveBtn) {
+                saveBtn.classList.remove('saving', 'saved');
+                saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Save failed';
+                saveBtn.style.background = '#e74c3c';
+                setTimeout(() => {
+                    saveBtn.style.background = '';
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+                }, 2500);
+            }
+        } finally {
+            isSaving = false;
+            saveTimer = null;
+        }
+    }
+
+    saveBtn?.addEventListener('click', () => {
+        if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+        saveBoard();
+    });
+
+    window.addEventListener('beforeunload', () => {
+        if (saveTimer && currentBoard) saveBoard();
+    });
+
+   
+    // 17. VISIBILITY / SHARE
     
-    // ===========================================
-    // START THE APPLICATION
-    // ===========================================
-    init();
+   boardVisibility?.addEventListener('change', async () => {
+    const isViewOnly = boardVisibility.value === 'public';
+    editor.classList.toggle('view-only', isViewOnly);
+    boardTitleInput.readOnly = isViewOnly;
+    updateShareSection();
+    await saveBoard();
+    
+    // Rebuild elements so controls appear or disappear
+    if (currentBoard) {
+        canvas.innerHTML = '';
+        (currentBoard.elements || []).forEach(el => canvas.appendChild(buildElement(el)));
+        requestAnimationFrame(fitCanvas);
+        deselect();
+    }
+});
+
+    function updateShareSection() {
+        if (!currentBoard) return;
+        copyLinkBtn.classList.toggle('hidden', boardVisibility.value !== 'public');
+    }
+
+    copyLinkBtn?.addEventListener('click', () => {
+        if (!currentBoard) return;
+        const url = window.location.origin + window.location.pathname + '?share=' + currentBoard._id;
+        navigator.clipboard.writeText(url).then(
+            () => {
+                const old = copyLinkBtn.innerHTML;
+                copyLinkBtn.innerHTML = '<i class="fas fa-check"></i> Copied';
+                setTimeout(() => copyLinkBtn.innerHTML = old, 1500);
+            },
+            () => prompt('Copy this link:', url)
+        );
+    });
+
+    boardTitleInput?.addEventListener('input', scheduleSave);
+
+   
+    // 18. INIT
+  
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get('share');
+    if (shared) {
+        openBoard(shared);
+    } else {
+        switchTab('public');
+    }
+
+    // 19. KEYBOARD
+    document.addEventListener('keydown', e => {
+        if (editor.classList.contains('hidden')) return;
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEl && !selectedEl.isContentEditable) {
+            if (document.activeElement !== boardTitleInput && document.activeElement !== selectedEl) {
+                e.preventDefault();
+                selectedEl.remove();
+                deselect();
+                scheduleSave();
+            }
+        }
+        if (e.key === 'Escape') deselect();
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+            saveBoard();
+        }
+    });
+
+    //  20. CAT BUBBLE 
+    document.querySelector('.close-bubble')?.addEventListener('click', () => {
+        const b = document.querySelector('.speech-bubble');
+        if (b) b.style.display = 'none';
+    });
 });
