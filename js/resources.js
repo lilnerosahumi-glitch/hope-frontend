@@ -398,6 +398,45 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
         div.textContent = str;
         return div.innerHTML;
     }
+       
+    function formatArticleContent(content) {
+        if (!content) return '';
+
+        // Already HTML? Use as-is.
+        if (/<\/?(p|h[1-6]|ul|ol|li|div|br|strong|em|blockquote)\b/i.test(content)) {
+            return content;
+        }
+
+        const blocks = content.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+
+        let html = '';
+        for (const block of blocks) {
+            const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+            if (!lines.length) continue;
+
+            if (lines.every(l => /^[-*•]\s+/.test(l))) {
+                html += '<ul>' + lines.map(l =>
+                    '<li>' + escapeHtml(l.replace(/^[-*•]\s+/, '')) + '</li>'
+                ).join('') + '</ul>';
+                continue;
+            }
+
+            if (lines.every(l => /^\d+[.)]\s+/.test(l))) {
+                html += '<ol>' + lines.map(l =>
+                    '<li>' + escapeHtml(l.replace(/^\d+[.)]\s+/, '')) + '</li>'
+                ).join('') + '</ol>';
+                continue;
+            }
+
+            if (lines.length === 1 && lines[0].length <= 70 && !/[.,;]$/.test(lines[0])) {
+                html += '<h3>' + escapeHtml(lines[0]) + '</h3>';
+                continue;
+            }
+
+            html += '<p>' + lines.map(escapeHtml).join(' ') + '</p>';
+        }
+        return html;
+    }
 
     // Initialize everything
     loadResourcesFromAPI();        
@@ -457,7 +496,7 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
             const articleId = link.getAttribute('data-article');
             if (articles[articleId]) {
                 document.getElementById('article-title').textContent = articles[articleId].title;
-                document.getElementById('article-body').innerHTML = articles[articleId].content;
+                document.getElementById('article-body').innerHTML = formatArticleContent(articles[articleId].content);
                 modal.classList.add('open');
                 document.body.style.overflow = 'hidden';
             }
