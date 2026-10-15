@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';     
     const ADMIN_STORAGE_KEY = 'hope_admin_session';
-    const CUSTOM_RESOURCES_KEY = 'hope_custom_resources';
+    const API_URL = 'https://hope-project.lilnerosahumi.workers.dev';
 
     // Initialize articles data
     const articles = {
@@ -344,17 +344,28 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
         }
     };
    
-    //Load custom resources from localStorage
-    
-    function loadCustomResources() {
+       // Load resources from the Cloudflare Worker API
+    async function loadResourcesFromAPI() {
         try {
-            const stored = JSON.parse(localStorage.getItem(CUSTOM_RESOURCES_KEY) || '[]');
-            stored.forEach(res => {
-                articles[res.id] = { title: res.title, content: res.content };
-                renderResourceCard(res, false);
+            const res = await fetch(`${API_URL}/api/resources`);
+            const resources = await res.json();
+
+            resources.forEach(r => {
+                // Register article so "Learn more" works
+                articles[r._id] = { title: r.title, content: r.content };
+
+                // Render the card in the grid
+                renderResourceCard({
+                    id: r._id,
+                    title: r.title,
+                    description: r.description,
+                    content: r.content,
+                    icon: r.icon,
+                    tags: r.tags
+                }, false);
             });
         } catch (e) {
-            console.warn('Could not load custom resources:', e);
+            console.warn('Could not load resources from API:', e);
         }
     }
 
@@ -379,12 +390,6 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
         `;
 
         grid.appendChild(card);
-
-        if (saveToStorage) {
-            const stored = JSON.parse(localStorage.getItem(CUSTOM_RESOURCES_KEY) || '[]');
-            stored.push(data);
-            localStorage.setItem(CUSTOM_RESOURCES_KEY, JSON.stringify(stored));
-        }
     }
 
     // Small helper to avoid HTML injection in title/description
@@ -395,7 +400,7 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
     }
 
     // Initialize everything
-    loadCustomResources();          
+    loadResourcesFromAPI();        
     initializeFilters();
     initializeArticleModal();
     initializeResourceForm();
@@ -512,7 +517,7 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
         cancelResourceBtn.addEventListener('click', resetResourceForm);
 
         // Submit form
-        newResourceForm.addEventListener('submit', function (e) {
+        newResourceForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const title = document.getElementById('resource-title').value.trim();
@@ -525,16 +530,40 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
                 return;
             }
 
-            const id = 'custom-' + Date.now();
-            const data = { id, title, description, content, icon, tags: [...selectedTags] };
+                        try {
+                const res = await fetch(`${API_URL}/api/resources`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        description,
+                        content,
+                        icon,
+                        tags: selectedTags
+                    })
+                });
 
-            articles[id] = { title, content };
+                if (!res.ok) throw new Error('Server error');
 
-            renderResourceCard(data, true);
+                const saved = await res.json();
 
-            alert('Resource added!');
-            resetResourceForm();
-        });
+                articles[saved._id] = { title: saved.title, content: saved.content };
+                renderResourceCard({
+                    id: saved._id,
+                    title: saved.title,
+                    description: saved.description,
+                    content: saved.content,
+                    icon: saved.icon,
+                    tags: saved.tags
+                }, false);
+
+                alert('Resource added!');
+                resetResourceForm();
+            } catch (err) {
+                console.error(err);
+                alert('Could not save resource. Check your connection.');
+            }
+         });
 
         // Reset helper
         function resetResourceForm() {
@@ -648,7 +677,7 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
         
     //Delete buttons
     function initializeDeleteButtons() {
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', async function (e) {
             const btn = e.target.closest('.delete-btn');
             if (!btn) return;
             
@@ -657,23 +686,31 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
             const id = btn.getAttribute('data-delete-resource');
             const card = btn.closest('.resource-card');
 
-            if (!confirm('Delete this resource? This cannot be undone.')) return;
-
-            delete articles[id];
-
-            try {
-                const stored = JSON.parse(localStorage.getItem(CUSTOM_RESOURCES_KEY) || '[]');
-                const filtered = stored.filter(r => r.id !== id);
-                localStorage.setItem(CUSTOM_RESOURCES_KEY, JSON.stringify(filtered));
-            } catch (err) {
-                console.warn('Could not update localStorage:', err);
+            if (!id.startsWith('res-')) {
+                alert('This is a built-in resource and cannot be deleted.');
+                return;
             }
 
-            if (card) {
-                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                card.style.opacity = '0';
-                card.style.transform = 'scale(0.95)';
-                setTimeout(() => card.remove(), 300);
+            if (!confirm('Delete this resource? This cannot be undone.')) return;
+
+            try {
+                const res = await fetch(`${API_URL}/api/resources/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) throw new Error('Server error');
+
+                delete articles[id];
+
+                if (card) {
+                    card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => card.remove(), 300);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Could not delete resource. Check your connection.');
             }
         });
     }
