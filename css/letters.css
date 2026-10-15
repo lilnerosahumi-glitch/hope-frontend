@@ -56,7 +56,7 @@ body {
 
 .page-header h1 {
     font-size: 2.8rem;
-    color: #CBB0FF;
+    color: #b495f0;
     margin-bottom: 0.5rem;
     font-family: 'Merriweather', serif;
     font-weight: 700;
@@ -319,5 +319,254 @@ body {
     .speech-bubble {
         width: 180px;
         bottom: 70px;
+    }
+}
+
+   RESPONSIVE DESIGN TABLETS AND PHONES
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    overflow-x: clip;
+}
+
+body {
+    width: 100%;
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+img,
+video,
+iframe {
+    max-width: 100%;
+}
+
+/* Keep content inside the screen */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: clamp(12px, 3vw, 32px);
+}
+
+/* Navigation */
+.main-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+}
+
+.nav-link {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Responsive headings */
+.page-header h1 {
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.page-header p {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    line-height: 1.6;
+}
+
+/* Responsive grids */
+.category-grid,
+.values-grid,
+.contact-info,
+.resources-grid {
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(min(100%, 250px), 1fr)
+    );
+}
+
+.letters-content {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+
+.letters-content > *,
+.category-grid > *,
+.values-grid > *,
+.contact-info > *,
+.resources-grid > * {
+    min-width: 0;
+}
+
+/* Forms and inputs */
+input,
+select,
+textarea,
+button {
+    max-width: 100%;
+    font: inherit;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+select,
+textarea {
+    min-width: 0;
+}
+
+textarea {
+    width: 100%;
+}
+
+/* Tablet layout */
+@media (max-width: 768px) {
+    .main-nav {
+        padding: 12px;
+    }
+
+    .nav-link {
+        font-size: 0.85rem;
+        padding: 9px 10px;
+    }
+
+    .letters-content {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.25rem;
+    }
+
+    .letter-form-section {
+        position: static;
+    }
+
+    .category-grid,
+    .values-grid,
+    .contact-info,
+    .resources-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mission-section,
+    .team-section,
+    .values-section,
+    .contact-section,
+    .letter-form-section,
+    .letters-feed-section {
+        padding: 1.25rem;
+    }
+
+    .feed-header {
+        align-items: stretch;
+    }
+
+    .search-box,
+    #letter-search {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .boards-header,
+    .editor-header {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .editor-actions,
+    .enhanced-toolbar,
+    .tool-buttons {
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
+
+    .toolbar-section {
+        flex-wrap: wrap;
+        min-width: 0;
+    }
+
+    .board-canvas-container {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-width: 100%;
+        padding: 1.25rem;
+    }
+}
+
+/* Phone layout */
+@media (max-width: 480px) {
+    .container {
+        padding: 12px;
+    }
+
+    .main-nav {
+        gap: 4px;
+        padding: 8px 6px;
+    }
+
+    .nav-link {
+        padding: 8px;
+        font-size: 0.75rem;
+    }
+
+    .page-header {
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .page-header p {
+        font-size: 1rem;
+    }
+
+    p {
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    button,
+    .submit-btn,
+    .resource-link {
+        min-height: 44px;
+    }
+
+    .letter-card,
+    .resource-card,
+    .value-card {
+        padding: 1rem;
+    }
+
+    .form-buttons {
+        flex-wrap: wrap;
+    }
+
+    .cat-mascot {
+        right: 10px;
+        bottom: 10px;
+        max-width: 65px;
+    }
+
+    .cat-mascot img {
+        width: 60px;
+        height: auto;
+    }
+
+    .speech-bubble {
+        width: min(180px, calc(100vw - 30px));
+        right: 0;
+        font-size: 0.8rem;
     }
 }
