@@ -533,6 +533,15 @@ textarea {
 
 /* Phone layout */
 @media (max-width: 480px) {
+    .main-nav {
+        gap: 4px;
+        padding: 8px 6px;
+    }
+
+    .nav-link {
+        padding: 8px;
+        font-size: 0.75rem;
+    }
     .container {
         padding: 12px;
     }
