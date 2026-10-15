@@ -49,7 +49,7 @@
 
 @media (max-width: 576px) {
     .page-header h1 {
-        font-size: 2rem !important;
+        font-size: 1.8rem !important;
     }
 
     .page-header p {
@@ -70,6 +70,91 @@
         padding: 1rem;
     }
 }
+
+/* Responsive fixes for the About page */
+@media (max-width: 768px) {
+    .main-nav {
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 0.75rem 0.5rem;
+    }
+
+    .nav-link {
+        margin: 0;
+        padding: 0.5rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .container {
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .page-header h1 {
+        font-size: 2.2rem;
+    }
+
+    .page-header p {
+        font-size: 1.1rem;
+        line-height: 1.5;
+    }
+
+    .mission-section,
+    .team-section,
+    .values-section,
+    .contact-section {
+        padding: 1.25rem;
+    }
+
+    .mission-statement p,
+    .story-text p,
+    .value-text p,
+    .contact-content p {
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    .values-grid,
+    .contact-info {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .page-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .page-header {
+        margin-top: 1.5rem;
+    }
+
+    .mission-section,
+    .team-section,
+    .values-section,
+    .contact-section {
+        padding: 1rem;
+    }
+
+    .mission-values li {
+        align-items: center;
+    }
+
+    .cat-mascot {
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .cat-mascot img {
+        width: 60px;
+        height: auto;
+    }
+
+    .speech-bubble {
+        width: min(180px, calc(100vw - 30px));
+    }
+}
+
     </style>
 </head>
 <body>
