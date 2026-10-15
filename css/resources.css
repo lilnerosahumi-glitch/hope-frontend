@@ -637,13 +637,13 @@ textarea {
         min-width: 0;
     }
 
-       .modal {
-        padding: 1rem;
+        .modal {
+        padding: 1rem 0.75rem;
     }
 
     .modal-content {
-        width: min(100%, 800px);
-        padding: 1.5rem;
+        padding: 1.75rem 1.5rem;
+        max-height: 90vh;
     }
 }
 
@@ -932,4 +932,13 @@ body.admin-mode .admin-banner {
     color: #777;
     margin: 0;
     font-size: 0.95rem;
+}
+.article-content {
+    padding: 0 0.25rem;
+}
+
+@media (max-width: 480px) {
+    .article-content {
+        padding: 0 0.5rem;
+    }
 }
