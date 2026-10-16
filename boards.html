@@ -144,8 +144,13 @@
         <!-- Canvas -->
         <div class="canvas-wrap">
             <div class="board-canvas-container">
-                <div class="board-canvas" id="board-canvas"></div>
-            </div>
+    <div class="board-canvas-scaler" id="board-canvas-scaler">
+        <div class="board-canvas" id="board-canvas"></div>
+    </div>
+    <button id="zoom-reset" class="zoom-reset hidden" title="Reset zoom">
+        <i class="fas fa-compress"></i> Fit
+    </button>
+</div>
             <p class="canvas-hint" id="canvas-hint">
                 Drag to move · double‑click text to edit · tap an item to see its buttons
             </p>
