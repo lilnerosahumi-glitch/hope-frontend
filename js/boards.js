@@ -100,17 +100,17 @@ function fitCanvas() {
     canvasContainer.style.height = (LOGICAL_H * scale) + 'px';
 }
 
-//Pinch-to-zoom on the canvas
+// Pinch-to-zoom on the canvas
 (function setupPinch() {
     let startDist = 0;
     let startZoom = 1;
     let pinching = false;
+    let lastPinchEnd = 0;
 
     const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 
     canvasContainer.addEventListener('touchstart', e => {
         if (e.touches.length === 2) {
-            // Cancel any drag currently in progress
             const dragging = canvas.querySelector('.draggable.dragging');
             if (dragging) dragging.classList.remove('dragging');
 
@@ -131,14 +131,16 @@ function fitCanvas() {
 
     canvasContainer.addEventListener('touchend', e => {
         if (e.touches.length < 2) {
+            if (pinching) lastPinchEnd = Date.now();
             pinching = false;
             startDist = 0;
         }
     });
 
-    // Double-tap to reset zoom
+    // Double-tap to reset zoom (ignored right after a pinch)
     let lastTap = 0;
     canvasContainer.addEventListener('touchend', e => {
+        if (Date.now() - lastPinchEnd < 400) return;
         const now = Date.now();
         if (now - lastTap < 300 && zoomFactor !== 1) {
             zoomFactor = 1;
@@ -471,14 +473,16 @@ function fitCanvas() {
                 d.style.textAlign = el.textAlign || 'left';
                 d.textContent = el.content || 'Double-click to edit';
 
-                d.addEventListener('dblclick', e => { e.stopPropagation(); enterTextEdit(d); });
+                d.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    selectElement(d);
+    enterTextEdit(d);
+});
                 d.addEventListener('blur', () => {
-                    d.contentEditable = 'false';
-                    scheduleSave();
-    if (selectedEl === d) {
+    d.contentEditable = 'false';
+    scheduleSave();
+});
 
-    }
-                });
                 break;
 
             case 'image':
@@ -1072,14 +1076,6 @@ return d;
     // 19. KEYBOARD
     document.addEventListener('keydown', e => {
         if (editor.classList.contains('hidden')) return;
-        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEl && !selectedEl.isContentEditable) {
-            if (document.activeElement !== boardTitleInput && document.activeElement !== selectedEl) {
-                e.preventDefault();
-                selectedEl.remove();
-                deselect();
-                scheduleSave();
-            }
-        }
         if (e.key === 'Escape') deselect();
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
