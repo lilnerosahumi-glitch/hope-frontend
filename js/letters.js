@@ -1,7 +1,10 @@
 // Letters page functionality with API - DEBUG VERSION
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('📝 Letters page loaded, initializing...');
-    
+
+    const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
+    const ADMIN_STORAGE_KEY = 'hope_admin_session';
+        
     const letterForm = document.getElementById('letter-form');
     const lettersFeed = document.getElementById('letters-feed');
     const searchInput = document.getElementById('letter-search');
@@ -90,13 +93,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('Creating element for letter:', letter._id);
         
         const letterDiv = document.createElement('div');
-        letterDiv.className = 'letter-card';
-        
-        // Set custom border color if specified
-        if (letter.color) {
-            letterDiv.style.borderLeftColor = letter.color;
-        }
-        
+            letterDiv.className = 'letter-card';
+            letterDiv.setAttribute('data-letter-id', letter._id);
+
+            // Set custom border color if specified
+            if (letter.color) {
+                letterDiv.style.borderLeftColor = letter.color;
+            }
+
+            // Delete button — hidden by CSS until moderator mode is on
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.setAttribute('data-delete-letter', letter._id);
+            deleteBtn.setAttribute('title', 'Delete letter');
+            deleteBtn.textContent = 'X';
+            letterDiv.appendChild(deleteBtn);
+
+
         // createdAt is already a year number
         const year = letter.createdAt || new Date().getFullYear();
         
@@ -219,6 +232,117 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 3000);
     }
     
+// ===========================================
+// MODERATOR MODE
+// ===========================================
+
+function initializeModeratorMode() {
+    const adminToggle = document.getElementById('admin-toggle');
+    const adminModal = document.getElementById('admin-modal');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    const adminPassword = document.getElementById('admin-password');
+    const adminError = document.getElementById('admin-error');
+    const adminLogout = document.getElementById('admin-logout');
+
+    if (!adminToggle || !adminModal) return;
+
+    // Restore session
+    if (localStorage.getItem(ADMIN_STORAGE_KEY) === 'yes') {
+        document.body.classList.add('admin-mode');
+    }
+
+    adminToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (document.body.classList.contains('admin-mode')) {
+            alert('You are already in moderator mode.');
+            return;
+        }
+        adminPassword.value = '';
+        adminError.textContent = '';
+        adminModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => adminPassword.focus(), 100);
+    });
+
+    function tryLogin() {
+        if (adminPassword.value === ADMIN_PASSWORD) {
+            localStorage.setItem(ADMIN_STORAGE_KEY, 'yes');
+            document.body.classList.add('admin-mode');
+            adminModal.classList.remove('open');
+            document.body.style.overflow = '';
+        } else {
+            adminError.textContent = 'Incorrect password. Try again.';
+            adminPassword.value = '';
+            adminPassword.focus();
+        }
+    }
+
+    adminLoginBtn.addEventListener('click', tryLogin);
+    adminPassword.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') tryLogin();
+    });
+
+    adminLogout.addEventListener('click', function () {
+        localStorage.removeItem(ADMIN_STORAGE_KEY);
+        document.body.classList.remove('admin-mode');
+    });
+
+    // Close modal on X or backdrop click or Escape
+    document.querySelectorAll('#admin-modal [data-close]').forEach(el => {
+        el.addEventListener('click', () => {
+            adminModal.classList.remove('open');
+            document.body.style.overflow = '';
+        });
+    });
+    adminModal.addEventListener('click', (e) => {
+        if (e.target === adminModal) {
+            adminModal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && adminModal.classList.contains('open')) {
+            adminModal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+}
+
+function initializeDeleteButtons() {
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.delete-btn');
+        if (!btn) return;
+        if (!document.body.classList.contains('admin-mode')) return;
+
+        const id = btn.getAttribute('data-delete-letter');
+        const card = btn.closest('.letter-card');
+        if (!id) return;
+
+        if (!confirm('Delete this letter? This cannot be undone.')) return;
+
+        try {
+            const res = await api.deleteLetter(id);
+            if (card) {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => card.remove(), 300);
+            }
+            // Update the counter in the heading
+            const feedHeading = document.querySelector('.feed-header h2');
+            if (feedHeading && typeof res.remaining === 'number') {
+                feedHeading.textContent = `Letters of Hope (${res.remaining.toLocaleString()})`;
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Could not delete letter. Check your connection.');
+        }
+    });
+}
+
+initializeModeratorMode();
+initializeDeleteButtons();
+
     // Initial display
     console.log('🚀 Starting initial display...');
     await displayLetters();

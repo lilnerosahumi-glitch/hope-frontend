@@ -120,6 +120,12 @@ class HopeAPI {
     });
   }
 
+  async deleteLetter(id) {
+    return await this.request(`/api/letters/${id}`, {
+        method: 'DELETE'
+    });
+}
+
   // RESOURCES
  
   async getResources(tag = 'all') {
