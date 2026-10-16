@@ -87,21 +87,35 @@ document.addEventListener('DOMContentLoaded', async function() {
             `;
         }
     }
-    
-    // Create a letter element
-    function createLetterElement(letter) {
-        console.log('Creating element for letter:', letter._id);
-        
-        const letterDiv = document.createElement('div');
+
+        // Create a letter element
+        function createLetterElement(letter) {
+            const letterDiv = document.createElement('div');
             letterDiv.className = 'letter-card';
             letterDiv.setAttribute('data-letter-id', letter._id);
 
-            // Set custom border color if specified
             if (letter.color) {
                 letterDiv.style.borderLeftColor = letter.color;
             }
 
-            // Delete button — hidden by CSS until moderator mode is on
+            // createdAt is already a year number
+            const year = letter.createdAt || new Date().getFullYear();
+
+            letterDiv.innerHTML = `
+                <div class="letter-header">
+                    ${letter.recipient ? `<span class="letter-recipient">To: ${letter.recipient}</span>` : ''}
+                    ${letter.category ? `<span class="letter-category">${letter.category}</span>` : ''}
+                </div>
+                <div class="letter-message">${letter.message || 'No message'}</div>
+                <div class="letter-footer">
+                    <span class="letter-time">${year}</span>
+                    <div class="letter-actions">
+                        <button class="like-btn" data-id="${letter._id}">💗 ${letter.likes?.length || 0}</button>
+                    </div>
+                </div>
+            `;
+
+            // Delete button added AFTER innerHTML 
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'delete-btn';
             deleteBtn.setAttribute('data-delete-letter', letter._id);
@@ -109,27 +123,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             deleteBtn.textContent = 'X';
             letterDiv.appendChild(deleteBtn);
 
+            return letterDiv;
+        }
 
-        // createdAt is already a year number
-        const year = letter.createdAt || new Date().getFullYear();
-        
-        letterDiv.innerHTML = `
-            <div class="letter-header">
-                ${letter.recipient ? `<span class="letter-recipient">To: ${letter.recipient}</span>` : ''}
-                ${letter.category ? `<span class="letter-category">${letter.category}</span>` : ''}
-            </div>
-            <div class="letter-message">${letter.message || 'No message'}</div>
-            <div class="letter-footer">
-                <span class="letter-time">${year}</span>
-                <div class="letter-actions">
-                    <button class="like-btn" data-id="${letter._id}">💗 ${letter.likes?.length || 0}</button>
-                </div>
-            </div>
-        `;
-        
-        return letterDiv;
-    }
-    
     // Handle form submission
     if (letterForm) {
         letterForm.addEventListener('submit', async function(e) {
