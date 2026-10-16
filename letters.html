@@ -20,6 +20,10 @@
     </nav>
     
     <div class="container">
+        <div class="admin-banner">
+            <span>🛡️ <strong>Moderator mode is on.</strong> You can delete letters.</span>
+            <button type="button" id="admin-logout">Exit moderator mode</button>
+        </div>
         <header class="page-header">
             <h1>Anonymous Letters</h1>
             <p>Share encouragement and read messages from others</p>
@@ -79,6 +83,10 @@
                 </div>
             </div>
         </div>
+
+        <footer class="page-footer">
+            <a href="#" id="admin-toggle">Moderator</a>
+        </footer>
         
       <!-- Cat Mascot -->
         <div class="cat-mascot">
@@ -91,6 +99,23 @@
     </div>
         </div>
     </div>
+
+<div id="admin-modal" class="modal">
+    <div class="modal-content admin-modal-content">
+        <button class="close-modal" data-close>&times;</button>
+        <h2>Moderator Login</h2>
+        <p>Enter the moderator password to manage letters.</p>
+        <div class="form-group">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" autocomplete="current-password">
+        </div>
+        <p id="admin-error" class="admin-error"></p>
+        <div class="form-buttons">
+            <button type="button" id="admin-login-btn" class="primary-btn">Log in</button>
+        </div>
+    </div>
+</div>
+
         <!-- Load script.js first for cat functionality -->
 <script src="js/script.js"></script>
 <!-- Load API service -->
