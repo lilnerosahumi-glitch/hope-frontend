@@ -52,12 +52,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (letters.length === 0) {
                 lettersFeed.innerHTML = '<div class="empty-feed"><p>No letters found. Be the first to share some hope!</p></div>';
                 console.log('ℹ️ No letters in database');
+                const feedHeading = document.querySelector('.feed-header h2');
+                if (feedHeading) feedHeading.textContent = 'Letters of Hope (0)';
                 return;
             }
             
-            console.log(`🎉 Displaying ${letters.length} letters`);
+            for (let i = letters.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [letters[i], letters[j]] = [letters[j], letters[i]];
+            }
+
+            console.log(`🎉 Displaying ${letters.length} letters (shuffled)`);
+            const feedHeading = document.querySelector('.feed-header h2');
+            if (feedHeading) {
+                feedHeading.textContent = `Letters of Hope (${letters.length.toLocaleString()})`;
+            }
             letters.forEach((letter, index) => {
-                console.log(`   Letter ${index}:`, letter);
                 const letterElement = createLetterElement(letter);
                 lettersFeed.appendChild(letterElement);
             });
