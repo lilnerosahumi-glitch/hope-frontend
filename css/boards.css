@@ -500,23 +500,26 @@ iframe {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    touch-action: pan-x pan-y;   
+    touch-action: pan-x pan-y;
 }
 
-.board-canvas-container .board-canvas {
-    touch-action: none;          
+.board-canvas-scaler {
+    position: relative;
+    /* width and height set by JS */
 }
 
 .board-canvas {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 1200px;
     height: 800px;
     background: #f7f7fb;
     border-radius: 8px;
     transform-origin: top left;
-    touch-action: none;
     user-select: none;
     overflow: hidden;
+    touch-action: none;
 }
 
 .canvas-hint {
@@ -1195,4 +1198,27 @@ iframe {
         opacity: 1;
         pointer-events: auto;
     }
+}
+/* ZOOM RESET BTN*/
+.zoom-reset {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    z-index: 50;
+    padding: 0.5rem 0.8rem;
+    background: rgba(203, 176, 255, 0.95);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-family: 'Merriweather', serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.zoom-reset.hidden { display: none; }
+
+.zoom-reset:hover {
+    background: #b495f0;
 }
