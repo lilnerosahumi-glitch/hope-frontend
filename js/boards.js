@@ -35,7 +35,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const canvas          = document.getElementById('board-canvas');
     const canvasContainer = document.querySelector('.board-canvas-container');
-    
+    const canvasScaler    = document.getElementById('board-canvas-scaler');
+    const zoomResetBtn    = document.getElementById('zoom-reset');
+        
 // Zoom state
 let zoomFactor = 1;
 
@@ -95,17 +97,32 @@ function fitCanvas() {
     if (!w) return;
     scale = (w / LOGICAL_W) * zoomFactor;
     canvas.style.transform = `scale(${scale})`;
-    canvas.style.width  = LOGICAL_W + 'px';
-    canvas.style.height = LOGICAL_H + 'px';
-    canvasContainer.style.height = (LOGICAL_H * scale) + 'px';
-}
+    canvas.style.transformOrigin = 'top left';
 
+    const scaledW = LOGICAL_W * scale;
+    const scaledH = LOGICAL_H * scale;
+
+    canvasScaler.style.width  = scaledW + 'px';
+    canvasScaler.style.height = scaledH + 'px';
+
+    // Container shows as much as fits, up to 70% of viewport height
+    const maxH = Math.min(window.innerHeight * 0.7, scaledH);
+    canvasContainer.style.height = maxH + 'px';
+
+    if (zoomResetBtn) {
+        zoomResetBtn.classList.toggle('hidden', Math.abs(zoomFactor - 1) < 0.05);
+    }
+}
 // Pinch-to-zoom on the canvas
 (function setupPinch() {
     let startDist = 0;
     let startZoom = 1;
+    let startScale = 1;
+    let startScrollLeft = 0;
+    let startScrollTop = 0;
+    let pinchMidX = 0;
+    let pinchMidY = 0;
     let pinching = false;
-    let lastPinchEnd = 0;
 
     const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 
@@ -117,38 +134,50 @@ function fitCanvas() {
             pinching = true;
             startDist = dist(e.touches[0], e.touches[1]);
             startZoom = zoomFactor;
+            startScale = scale;
+            startScrollLeft = canvasContainer.scrollLeft;
+            startScrollTop  = canvasContainer.scrollTop;
+
+            const rect = canvasContainer.getBoundingClientRect();
+            pinchMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+            pinchMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
         }
     }, { passive: true });
 
     canvasContainer.addEventListener('touchmove', e => {
         if (!pinching || e.touches.length !== 2 || !startDist) return;
         e.preventDefault();
-        const d = dist(e.touches[0], e.touches[1]);
-        const ratio = d / startDist;
-        zoomFactor = Math.max(0.5, Math.min(4, startZoom * ratio));
+
+        const ratio = dist(e.touches[0], e.touches[1]) / startDist;
+        let newZoom = Math.max(0.5, Math.min(4, startZoom * ratio));
+
+        // Magnetic snap to 1.0 when close — makes it easy to return to original size
+        if (Math.abs(newZoom - 1) < 0.08) newZoom = 1;
+        zoomFactor = newZoom;
+
+        const logicalX = (startScrollLeft + pinchMidX) / startScale;
+        const logicalY = (startScrollTop  + pinchMidY) / startScale;
+
         fitCanvas();
+
+        canvasContainer.scrollLeft = logicalX * scale - pinchMidX;
+        canvasContainer.scrollTop  = logicalY * scale - pinchMidY;
     }, { passive: false });
 
     canvasContainer.addEventListener('touchend', e => {
         if (e.touches.length < 2) {
-            if (pinching) lastPinchEnd = Date.now();
             pinching = false;
             startDist = 0;
         }
     });
-
-    // Double-tap to reset zoom (ignored right after a pinch)
-    let lastTap = 0;
-    canvasContainer.addEventListener('touchend', e => {
-        if (Date.now() - lastPinchEnd < 400) return;
-        const now = Date.now();
-        if (now - lastTap < 300 && zoomFactor !== 1) {
-            zoomFactor = 1;
-            fitCanvas();
-        }
-        lastTap = now;
-    });
 })();
+
+// Reset zoom button
+zoomResetBtn?.addEventListener('click', () => {
+    zoomFactor = 1;
+    fitCanvas();
+    canvasContainer.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+});
 
     window.addEventListener('resize', fitCanvas);
     if (window.ResizeObserver) new ResizeObserver(fitCanvas).observe(canvasContainer);
@@ -400,6 +429,7 @@ function fitCanvas() {
             mySection.classList.add('hidden');
            editor.classList.remove('hidden');
             editor.style.display = '';
+            editor.style.display = '';
 
             boardTitleInput.value = board.title || 'Untitled Board';
             boardVisibility.value = board.visibility || 'private';
@@ -429,7 +459,6 @@ function fitCanvas() {
 
    backBtn?.addEventListener('click', async () => {
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; await saveBoard(); }
-    // Fully hide the editor and clear its canvas
     editor.classList.add('hidden');
     editor.style.display = 'none';
     canvas.innerHTML = '';
@@ -473,11 +502,12 @@ function fitCanvas() {
                 d.style.textAlign = el.textAlign || 'left';
                 d.textContent = el.content || 'Double-click to edit';
 
-                d.addEventListener('dblclick', e => {
-    e.stopPropagation();
-    selectElement(d);
-    enterTextEdit(d);
-});
+               d.addEventListener('dblclick', e => {
+                e.stopPropagation();
+                selectElement(d);
+                enterTextEdit(d);
+                });
+                
                 d.addEventListener('blur', () => {
     d.contentEditable = 'false';
     scheduleSave();
@@ -912,27 +942,13 @@ return d;
     }
 
     function setSaveState(state) {
-        if (!saveBtn) return;
-        if (state === 'pending') {
-            saveBtn.classList.remove('saved', 'saving');
-            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
-        } else if (state === 'saving') {
-            saveBtn.classList.remove('saved');
-            saveBtn.classList.add('saving');
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
-        } else if (state === 'saved') {
-            saveBtn.classList.remove('saving');
-            saveBtn.classList.add('saved');
-            saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved';
-            setTimeout(() => {
-                saveBtn.classList.remove('saved');
-                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
-            }, 1500);
-        } else {
-            saveBtn.classList.remove('saving', 'saved');
-            saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
-        }
+    if (!saveBtn) return;
+    if (state === 'saving') {
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+    } else {
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Save';
     }
+}
 
     async function saveBoard() {
         if (!currentBoard || isSaving) return;
