@@ -35,6 +35,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const canvas          = document.getElementById('board-canvas');
     const canvasContainer = document.querySelector('.board-canvas-container');
+    
+// Zoom state
+let zoomFactor = 1;
+
+// Active touch counter — used to bail out of drags when pinching
+let activeTouches = 0;
+document.addEventListener('touchstart', () => { activeTouches++; }, { passive: true });
+document.addEventListener('touchend',   () => { activeTouches = Math.max(0, activeTouches - 1); }, { passive: true });
+document.addEventListener('touchcancel',() => { activeTouches = Math.max(0, activeTouches - 1); }, { passive: true });
+
     const canvasHint      = document.getElementById('canvas-hint');
 
     const addButtons  = document.querySelectorAll('.tool-btn[data-add]');
@@ -80,15 +90,64 @@ document.addEventListener('DOMContentLoaded', function () {
     
     //  4. CANVAS SCALING (keeps board fully visible anywhere)
     
-    function fitCanvas() {
-        const w = canvasContainer.clientWidth;
-        if (!w) return;
-        scale = w / LOGICAL_W;
-        canvas.style.transform = `scale(${scale})`;
-        canvas.style.width  = LOGICAL_W + 'px';
-        canvas.style.height = LOGICAL_H + 'px';
-        canvasContainer.style.height = (LOGICAL_H * scale) + 'px';
-    }
+function fitCanvas() {
+    const w = canvasContainer.clientWidth;
+    if (!w) return;
+    scale = (w / LOGICAL_W) * zoomFactor;
+    canvas.style.transform = `scale(${scale})`;
+    canvas.style.width  = LOGICAL_W + 'px';
+    canvas.style.height = LOGICAL_H + 'px';
+    canvasContainer.style.height = (LOGICAL_H * scale) + 'px';
+}
+
+//Pinch-to-zoom on the canvas
+(function setupPinch() {
+    let startDist = 0;
+    let startZoom = 1;
+    let pinching = false;
+
+    const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+
+    canvasContainer.addEventListener('touchstart', e => {
+        if (e.touches.length === 2) {
+            // Cancel any drag currently in progress
+            const dragging = canvas.querySelector('.draggable.dragging');
+            if (dragging) dragging.classList.remove('dragging');
+
+            pinching = true;
+            startDist = dist(e.touches[0], e.touches[1]);
+            startZoom = zoomFactor;
+        }
+    }, { passive: true });
+
+    canvasContainer.addEventListener('touchmove', e => {
+        if (!pinching || e.touches.length !== 2 || !startDist) return;
+        e.preventDefault();
+        const d = dist(e.touches[0], e.touches[1]);
+        const ratio = d / startDist;
+        zoomFactor = Math.max(0.5, Math.min(4, startZoom * ratio));
+        fitCanvas();
+    }, { passive: false });
+
+    canvasContainer.addEventListener('touchend', e => {
+        if (e.touches.length < 2) {
+            pinching = false;
+            startDist = 0;
+        }
+    });
+
+    // Double-tap to reset zoom
+    let lastTap = 0;
+    canvasContainer.addEventListener('touchend', e => {
+        const now = Date.now();
+        if (now - lastTap < 300 && zoomFactor !== 1) {
+            zoomFactor = 1;
+            fitCanvas();
+        }
+        lastTap = now;
+    });
+})();
+
     window.addEventListener('resize', fitCanvas);
     if (window.ResizeObserver) new ResizeObserver(fitCanvas).observe(canvasContainer);
 
@@ -337,7 +396,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             publicSection.classList.add('hidden');
             mySection.classList.add('hidden');
-            editor.classList.remove('hidden');
+           editor.classList.remove('hidden');
+            editor.style.display = '';
 
             boardTitleInput.value = board.title || 'Untitled Board';
             boardVisibility.value = board.visibility || 'private';
@@ -353,6 +413,7 @@ document.addEventListener('DOMContentLoaded', function () {
             canvas.innerHTML = '';
             (board.elements || []).forEach(el => canvas.appendChild(buildElement(el)));
 
+            zoomFactor = 1;
             requestAnimationFrame(fitCanvas);
             deselect();
             updateTextToolbar();
@@ -364,19 +425,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    backBtn?.addEventListener('click', async () => {
-        if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; await saveBoard(); }
-        editor.classList.add('hidden');
-        currentBoard = null;
-        if (currentTab === 'my-boards') {
-            mySection.classList.remove('hidden');
-            loadMyBoards();
-        } else {
-            publicSection.classList.remove('hidden');
-            loadPublicBoards();
-        }
-    });
-
+   backBtn?.addEventListener('click', async () => {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; await saveBoard(); }
+    // Fully hide the editor and clear its canvas
+    editor.classList.add('hidden');
+    editor.style.display = 'none';
+    canvas.innerHTML = '';
+    currentBoard = null;
+    deselect();
+    if (currentTab === 'my-boards') {
+        mySection.classList.remove('hidden');
+        loadMyBoards();
+    } else {
+        publicSection.classList.remove('hidden');
+        loadPublicBoards();
+    }
+});
    
     //  8. BUILD ELEMENTS
     
@@ -411,6 +475,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 d.addEventListener('blur', () => {
                     d.contentEditable = 'false';
                     scheduleSave();
+    if (selectedEl === d) {
+
+    }
                 });
                 break;
 
@@ -508,14 +575,17 @@ return d;
     });
 
     
-    // 10. DRAG (pointer events = mouse + touch)
-    
+        // 10. DRAG (pointer events = mouse + touch)
+
     function makeDraggable(el) {
         el.addEventListener('pointerdown', e => {
             if (e.pointerType === 'mouse' && e.button !== 0) return;
+            if (e.pointerType === 'touch' && activeTouches >= 2) return;  // pinching
             if (e.target.closest('.draggable-controls')) return;
             if (e.target.classList.contains('resize-handle')) return;
-            if (el.classList.contains('draggable-text') && el.isContentEditable) return;
+            if (el.classList.contains('draggable-text')
+                && el.isContentEditable
+                && document.activeElement === el) return;
 
             if (el.classList.contains('draggable-music')) {
                 const h = el.querySelector('.music-drag-handle');
@@ -523,15 +593,18 @@ return d;
             }
 
             e.preventDefault();
+            e.stopPropagation();
+
             selectElement(el);
             el.classList.add('dragging');
-            el.setPointerCapture(e.pointerId);
+            try { el.setPointerCapture(e.pointerId); } catch {}
 
             const start = toLogical(e.clientX, e.clientY);
             const startLeft = parseFloat(el.style.left) || 0;
             const startTop  = parseFloat(el.style.top)  || 0;
 
             const onMove = ev => {
+                if (activeTouches >= 2) return;  
                 const p = toLogical(ev.clientX, ev.clientY);
                 let nl = startLeft + (p.x - start.x);
                 let nt = startTop  + (p.y - start.y);
@@ -540,6 +613,7 @@ return d;
                 el.style.left = nl + 'px';
                 el.style.top  = nt + 'px';
             };
+
             const onUp = () => {
                 el.classList.remove('dragging');
                 try { el.releasePointerCapture(e.pointerId); } catch {}
@@ -555,29 +629,31 @@ return d;
         });
     }
 
-
     // 11. RESIZE
-    
+
     function makeResizable(el, handle) {
         handle.addEventListener('pointerdown', e => {
             e.preventDefault();
             e.stopPropagation();
+            if (activeTouches >= 2) return;  // pinching
             if (el.classList.contains('draggable-text') && el.isContentEditable) return;
 
             selectElement(el);
-            handle.setPointerCapture(e.pointerId);
+            try { handle.setPointerCapture(e.pointerId); } catch {}
 
             const start = toLogical(e.clientX, e.clientY);
             const startW = el.offsetWidth;
             const startH = el.offsetHeight;
 
             const onMove = ev => {
+                if (activeTouches >= 2) return;
                 const p = toLogical(ev.clientX, ev.clientY);
                 const w = Math.max(30, startW + (p.x - start.x));
                 const h = Math.max(20, startH + (p.y - start.y));
                 el.style.width  = w + 'px';
                 el.style.height = h + 'px';
             };
+
             const onUp = () => {
                 try { handle.releasePointerCapture(e.pointerId); } catch {}
                 handle.removeEventListener('pointermove', onMove);
@@ -591,7 +667,6 @@ return d;
             handle.addEventListener('pointercancel', onUp);
         });
     }
-
     
     // 12. TEXT EDIT
  
