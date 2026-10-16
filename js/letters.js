@@ -22,27 +22,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Display letters with detailed error handling
     async function displayLetters() {
-        console.log('🔄 Attempting to display letters...');
-        
-        try {
-            // Test API directly first
-            console.log('🌐 Testing API connection...');
-            const testResponse = await fetch('https://hope-project.lilnerosahumi.workers.dev/api/letters');
-            console.log('✅ API response status:', testResponse.status);
-            
-            if (!testResponse.ok) {
-                throw new Error(`API returned ${testResponse.status}: ${testResponse.statusText}`);
-            }
-            
-            const testData = await testResponse.json();
-            console.log('📊 API returned data:', testData);
-            console.log('📊 Data type:', typeof testData);
-            console.log('📊 Is array?:', Array.isArray(testData));
-            
-            // Now try with your api.getLetters()
-            console.log('🔗 Calling api.getLetters()...');
-            const letters = await api.getLetters();
-            console.log('✅ api.getLetters() returned:', letters);
+            const search = (searchInput?.value || '').trim();
+            const category = (categorySelect?.value || '').trim();
+
+            try {
+                const letters = await api.getLetters(search, category);
             
             lettersFeed.innerHTML = '';
             
@@ -60,15 +44,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
             
-            for (let i = letters.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [letters[i], letters[j]] = [letters[j], letters[i]];
+           const isFiltered = !!search || (category && category !== '');
+            if (!isFiltered) {
+                for (let i = letters.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [letters[i], letters[j]] = [letters[j], letters[i]];
+                }
             }
 
             console.log(`🎉 Displaying ${letters.length} letters (shuffled)`);
             const feedHeading = document.querySelector('.feed-header h2');
-            if (feedHeading) {
-                feedHeading.textContent = `Letters of Hope (${letters.length.toLocaleString()})`;
+           if (feedHeading) {
+                feedHeading.textContent = isFiltered
+                    ? `Search results (${letters.length.toLocaleString()})`
+                    : `Letters of Hope (${letters.length.toLocaleString()})`;
             }
             letters.forEach((letter, index) => {
                 const letterElement = createLetterElement(letter);
@@ -172,9 +161,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (searchBtn) {
         searchBtn.addEventListener('click', displayLetters);
     }
+
     if (searchInput) {
+        let searchTimer = null;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(displayLetters, 350);
+        });
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                clearTimeout(searchTimer);
                 displayLetters();
             }
         });
