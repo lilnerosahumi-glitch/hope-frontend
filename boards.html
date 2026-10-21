@@ -22,6 +22,11 @@
 
 <div class="container">
 
+<div class="admin-banner">
+    <span>🛡️ <strong>Moderator mode is on.</strong> You can delete boards.</span>
+    <button type="button" id="admin-logout">Exit moderator mode</button>
+</div>
+
     <header class="page-header">
         <h1>Inspiration Boards</h1>
         <p>Create and share boards with images, music, and stickers</p>
@@ -61,7 +66,7 @@
             <input id="board-title" class="board-title-input" type="text"
                    placeholder="Untitled Board" maxlength="80">
 
-            <div class="editor-actions">
+           <div class="editor-actions">
                 <div class="visibility-toggle">
                     <label for="board-visibility">Visibility</label>
                     <select id="board-visibility">
@@ -71,15 +76,15 @@
                 </div>
 
                 <button id="copy-link-btn" class="secondary-btn hidden">
-                    <i class="fas fa-link"></i> Copy link
+                    <i class="fas fa-link"></i> <span>Copy link</span>
                 </button>
 
                 <button id="save-board-btn" class="primary-btn">
-                    <i class="fas fa-save"></i> Save
+                    <i class="fas fa-save"></i> <span>Save</span>
                 </button>
 
                 <button id="back-to-boards-btn" class="secondary-btn">
-                    <i class="fas fa-arrow-left"></i> Back
+                    <i class="fas fa-arrow-left"></i> <span>Back</span>
                 </button>
             </div>
         </div>
@@ -179,12 +184,32 @@
     </div>
 </div>
 
+<footer class="page-footer">
+    <a href="#" id="admin-toggle">Moderator</a>
+</footer>
+
 <!-- Cat mascot -->
 <div class="cat-mascot">
     <img src="images/cat.png" alt="Helper Cat">
     <div class="speech-bubble">
         <span class="close-bubble">×</span>
         <p>Drag things around, double‑click text to edit. Everything saves automatically.</p>
+    </div>
+</div>
+
+<div id="admin-modal" class="modal">
+    <div class="modal-content admin-modal-content">
+        <button class="close-modal" data-close>&times;</button>
+        <h2>Moderator Login</h2>
+        <p>Enter the moderator password to manage boards.</p>
+        <div class="form-group">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" autocomplete="current-password">
+        </div>
+        <p id="admin-error" class="admin-error"></p>
+        <div class="form-buttons">
+            <button type="button" id="admin-login-btn" class="primary-btn">Log in</button>
+        </div>
     </div>
 </div>
 
