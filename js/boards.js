@@ -1,6 +1,8 @@
 //BOARDS 
 document.addEventListener('DOMContentLoaded', function () {
 
+    const MOD_STORAGE_KEY = 'hope_mod_password';
+
     /*DEVICE TOKEN — replaces login*/
     let TOKEN = localStorage.getItem('hope_token');
     if (!TOKEN) {
@@ -259,52 +261,67 @@ zoomResetBtn?.addEventListener('click', () => {
 }
 
     function makeBoardCard(board, editable) {
-        const card = document.createElement('div');
-        card.className = 'board-card';
+    const card = document.createElement('div');
+    card.className = 'board-card';
+    card.setAttribute('data-board-id', board._id);
 
-        const thumb = document.createElement('div');
-        thumb.className = 'board-thumbnail';
+    const thumb = document.createElement('div');
+    thumb.className = 'board-thumbnail';
 
-        if (board.elements && board.elements.length) {
-            renderPreview(board, thumb);
-        } else {
-            thumb.innerHTML = `<div class="board-thumbnail-empty">
-                <i class="fas fa-palette"></i><p>Empty board</p></div>`;
-        }
-
-        const info = document.createElement('div');
-        info.className = 'board-info';
-
-        const title = document.createElement('div');
-        title.className = 'board-title';
-        title.textContent = board.title || 'Untitled Board';
-
-        const meta = document.createElement('div');
-        meta.className = 'board-meta';
-
-        const dateSpan = document.createElement('span');
-        dateSpan.textContent = formatDate(board.updatedAt || board.createdAt);
-        meta.appendChild(dateSpan);
-
-        if (editable && board.visibility) {
-            const vis = document.createElement('span');
-            vis.className = 'board-visibility ' + board.visibility;
-            vis.textContent = board.visibility;
-            meta.appendChild(vis);
-        } else if (!editable && board.owner) {
-            const a = document.createElement('span');
-            a.className = 'board-author';
-            a.textContent = 'by ' + (typeof board.owner === 'object' ? board.owner.username : 'Anonymous');
-            meta.appendChild(a);
-        }
-
-        info.appendChild(title);
-        info.appendChild(meta);
-        card.appendChild(thumb);
-        card.appendChild(info);
-        card.addEventListener('click', () => openBoard(board._id));
-        return card;
+    if (board.elements && board.elements.length) {
+        renderPreview(board, thumb);
+    } else {
+        thumb.innerHTML = `<div class="board-thumbnail-empty">
+            <i class="fas fa-palette"></i><p>Empty board</p></div>`;
     }
+
+    const info = document.createElement('div');
+    info.className = 'board-info';
+
+    const title = document.createElement('div');
+    title.className = 'board-title';
+    title.textContent = board.title || 'Untitled Board';
+
+    const meta = document.createElement('div');
+    meta.className = 'board-meta';
+
+    const dateSpan = document.createElement('span');
+    dateSpan.textContent = formatDate(board.updatedAt || board.createdAt);
+    meta.appendChild(dateSpan);
+
+    if (editable && board.visibility) {
+        const vis = document.createElement('span');
+        vis.className = 'board-visibility ' + board.visibility;
+        vis.textContent = board.visibility;
+        meta.appendChild(vis);
+    } else if (!editable && board.owner) {
+        const a = document.createElement('span');
+        a.className = 'board-author';
+        a.textContent = 'by ' + (typeof board.owner === 'object' ? board.owner.username : 'Anonymous');
+        meta.appendChild(a);
+    }
+
+    info.appendChild(title);
+    info.appendChild(meta);
+    card.appendChild(thumb);
+    card.appendChild(info);
+
+    // Mod delete button — hidden until admin mode is on
+    const del = document.createElement('button');
+    del.className = 'delete-btn';
+    del.setAttribute('data-delete-board', board._id);
+    del.setAttribute('title', 'Delete board');
+    del.textContent = 'X';
+    card.appendChild(del);
+
+    card.addEventListener('click', (e) => {
+        // Don't open the board if the delete button was clicked
+        if (e.target.closest('.delete-btn')) return;
+        openBoard(board._id);
+    });
+
+    return card;
+}
 
     function renderPreview(board, thumbEl) {
         const inner = document.createElement('div');
@@ -429,7 +446,8 @@ zoomResetBtn?.addEventListener('click', () => {
             mySection.classList.add('hidden');
            editor.classList.remove('hidden');
             editor.style.display = '';
-            editor.style.display = '';
+            document.body.classList.add('editor-open');
+        
 
             boardTitleInput.value = board.title || 'Untitled Board';
             boardVisibility.value = board.visibility || 'private';
@@ -461,6 +479,7 @@ zoomResetBtn?.addEventListener('click', () => {
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; await saveBoard(); }
     editor.classList.add('hidden');
     editor.style.display = 'none';
+    document.body.classList.remove('editor-open');
     canvas.innerHTML = '';
     currentBoard = null;
     deselect();
@@ -1078,6 +1097,137 @@ return d;
 
     boardTitleInput?.addEventListener('input', scheduleSave);
 
+
+// MODERATOR MODE
+
+function initializeModeratorMode() {
+    const adminToggle = document.getElementById('admin-toggle');
+    const adminModal = document.getElementById('admin-modal');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    const adminPassword = document.getElementById('admin-password');
+    const adminError = document.getElementById('admin-error');
+    const adminLogout = document.getElementById('admin-logout');
+
+    if (!adminToggle || !adminModal) return;
+
+    if (sessionStorage.getItem(MOD_STORAGE_KEY)) {
+        document.body.classList.add('admin-mode');
+    }
+
+    adminToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (document.body.classList.contains('admin-mode')) {
+            alert('You are already in moderator mode.');
+            return;
+        }
+        adminPassword.value = '';
+        adminError.textContent = '';
+        adminModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => adminPassword.focus(), 100);
+    });
+
+    async function tryLogin() {
+        const pw = adminPassword.value;
+        if (!pw) return;
+
+        adminLoginBtn.disabled = true;
+        adminLoginBtn.textContent = 'Checking…';
+
+        try {
+            const result = await api.verifyModPassword(pw);
+            if (result && result.ok) {
+                sessionStorage.setItem(MOD_STORAGE_KEY, pw);
+                document.body.classList.add('admin-mode');
+                adminModal.classList.remove('open');
+                document.body.style.overflow = '';
+            } else {
+                adminError.textContent = 'Incorrect password.';
+                adminPassword.value = '';
+                adminPassword.focus();
+            }
+        } catch (err) {
+            adminError.textContent = 'Could not verify. Try again.';
+        } finally {
+            adminLoginBtn.disabled = false;
+            adminLoginBtn.textContent = 'Log in';
+        }
+    }
+
+    adminLoginBtn.addEventListener('click', tryLogin);
+    adminPassword.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') tryLogin();
+    });
+
+    adminLogout.addEventListener('click', function () {
+        sessionStorage.removeItem(MOD_STORAGE_KEY);
+        document.body.classList.remove('admin-mode');
+    });
+
+    document.querySelectorAll('#admin-modal [data-close]').forEach(el => {
+        el.addEventListener('click', () => {
+            adminModal.classList.remove('open');
+            document.body.style.overflow = '';
+        });
+    });
+    adminModal.addEventListener('click', (e) => {
+        if (e.target === adminModal) {
+            adminModal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && adminModal.classList.contains('open')) {
+            adminModal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+}
+
+function initializeDeleteButtons() {
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.delete-btn');
+        if (!btn) return;
+        if (!document.body.classList.contains('admin-mode')) return;
+
+        e.stopPropagation();
+        e.preventDefault();
+
+        const id = btn.getAttribute('data-delete-board');
+        const card = btn.closest('.board-card');
+        const password = sessionStorage.getItem(MOD_STORAGE_KEY);
+
+        if (!password) {
+            alert('Session expired. Please log in again.');
+            document.body.classList.remove('admin-mode');
+            return;
+        }
+
+        if (!id) return;
+        if (!confirm('Delete this board permanently? This cannot be undone.')) return;
+
+        try {
+            await api.deleteBoard(id, password);
+            if (card) {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => card.remove(), 300);
+            }
+        } catch (err) {
+            if (err.message && err.message.includes('401')) {
+                alert('Session expired. Please log in again.');
+                sessionStorage.removeItem(MOD_STORAGE_KEY);
+                document.body.classList.remove('admin-mode');
+            } else {
+                alert('Could not delete board. Check your connection.');
+            }
+        }
+    });
+}
+
+initializeModeratorMode();
+initializeDeleteButtons();
    
     // 18. INIT
   

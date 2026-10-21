@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';     
-    const ADMIN_STORAGE_KEY = 'hope_admin_session';
+const MOD_STORAGE_KEY = 'hope_mod_password';
     const API_URL = 'https://hope-project.lilnerosahumi.workers.dev';
 
     // Initialize articles data
@@ -570,21 +569,19 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
             }
 
                         try {
-                const res = await fetch(`${API_URL}/api/resources`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        title,
-                        description,
-                        content,
-                        icon,
-                        tags: selectedTags
-                    })
-                });
+                            const password = sessionStorage.getItem(MOD_STORAGE_KEY);
+                            if (!password) {
+                                alert('Session expired. Please log in again.');
+                                return;
+                            }
 
-                if (!res.ok) throw new Error('Server error');
-
-                const saved = await res.json();
+                            const saved = await api.addResource({
+                                title,
+                                description,
+                                content,
+                                icon,
+                                tags: selectedTags
+                            }, password);
 
                 articles[saved._id] = { title: saved.title, content: saved.content };
                 renderResourceCard({
@@ -660,99 +657,116 @@ const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
     
     //Moderator mode
     function initializeAdminMode() {
-        const adminToggle = document.getElementById('admin-toggle');
-        const adminModal = document.getElementById('admin-modal');
-        const adminLoginBtn = document.getElementById('admin-login-btn');
-        const adminPassword = document.getElementById('admin-password');
-        const adminError = document.getElementById('admin-error');
-        const adminLogout = document.getElementById('admin-logout');
+    const adminToggle = document.getElementById('admin-toggle');
+    const adminModal = document.getElementById('admin-modal');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    const adminPassword = document.getElementById('admin-password');
+    const adminError = document.getElementById('admin-error');
+    const adminLogout = document.getElementById('admin-logout');
 
-        if (!adminToggle || !adminModal) return;
+    if (!adminToggle || !adminModal) return;
 
-        // Restore session from localStorage
-        if (localStorage.getItem(ADMIN_STORAGE_KEY) === 'yes') {
-            document.body.classList.add('admin-mode');
+    // Restore session from sessionStorage (per-tab)
+    if (sessionStorage.getItem(MOD_STORAGE_KEY)) {
+        document.body.classList.add('admin-mode');
+    }
+
+    adminToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (document.body.classList.contains('admin-mode')) {
+            alert('You are already in moderator mode.');
+            return;
         }
+        adminPassword.value = '';
+        adminError.textContent = '';
+        adminModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => adminPassword.focus(), 100);
+    });
 
-        // Open login modal when footer link is clicked
-        adminToggle.addEventListener('click', function (e) {
-            e.preventDefault();
-            if (document.body.classList.contains('admin-mode')) {
-                alert('You are already in moderator mode.');
-                return;
-            }
-            adminPassword.value = '';
-            adminError.textContent = '';
-            adminModal.classList.add('open');
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => adminPassword.focus(), 100);
-        });
+    async function tryLogin() {
+        const pw = adminPassword.value;
+        if (!pw) return;
 
-        // Try to log in
-        function tryLogin() {
-            if (adminPassword.value === ADMIN_PASSWORD) {
-                localStorage.setItem(ADMIN_STORAGE_KEY, 'yes');
+        adminLoginBtn.disabled = true;
+        adminLoginBtn.textContent = 'Checking…';
+
+        try {
+            const result = await api.verifyModPassword(pw);
+            if (result && result.ok) {
+                sessionStorage.setItem(MOD_STORAGE_KEY, pw);
                 document.body.classList.add('admin-mode');
-                closeAllModals();
+                adminModal.classList.remove('open');
+                document.body.style.overflow = '';
             } else {
-                adminError.textContent = 'Incorrect password. Try again.';
+                adminError.textContent = 'Incorrect password.';
                 adminPassword.value = '';
                 adminPassword.focus();
             }
+        } catch (err) {
+            adminError.textContent = 'Could not verify. Try again.';
+        } finally {
+            adminLoginBtn.disabled = false;
+            adminLoginBtn.textContent = 'Log in';
         }
-
-        adminLoginBtn.addEventListener('click', tryLogin);
-        adminPassword.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') tryLogin();
-        });
-
-        // Log out
-        adminLogout.addEventListener('click', function () {
-            localStorage.removeItem(ADMIN_STORAGE_KEY);
-            document.body.classList.remove('admin-mode');
-        });
     }
+
+    adminLoginBtn.addEventListener('click', tryLogin);
+    adminPassword.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') tryLogin();
+    });
+
+    adminLogout.addEventListener('click', function () {
+        sessionStorage.removeItem(MOD_STORAGE_KEY);
+        document.body.classList.remove('admin-mode');
+    });
+}
 
         
     //Delete buttons
     function initializeDeleteButtons() {
-        document.addEventListener('click', async function (e) {
-            const btn = e.target.closest('.delete-btn');
-            if (!btn) return;
-            
-            if (!document.body.classList.contains('admin-mode')) return;
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.delete-btn');
+        if (!btn) return;
+        if (!document.body.classList.contains('admin-mode')) return;
 
-            const id = btn.getAttribute('data-delete-resource');
-            const card = btn.closest('.resource-card');
+        const id = btn.getAttribute('data-delete-resource');
+        const card = btn.closest('.resource-card');
+        const password = sessionStorage.getItem(MOD_STORAGE_KEY);
 
-            if (!id.startsWith('res-')) {
-                alert('This is a built-in resource and cannot be deleted.');
-                return;
+        if (!password) {
+            alert('Session expired. Please log in again.');
+            document.body.classList.remove('admin-mode');
+            return;
+        }
+
+        if (!id.startsWith('res-')) {
+            alert('This is a built-in resource and cannot be deleted.');
+            return;
+        }
+
+        if (!confirm('Delete this resource? This cannot be undone.')) return;
+
+        try {
+            await api.deleteResource(id, password);
+            delete articles[id];
+            if (card) {
+                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => card.remove(), 300);
             }
-
-            if (!confirm('Delete this resource? This cannot be undone.')) return;
-
-            try {
-                const res = await fetch(`${API_URL}/api/resources/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (!res.ok) throw new Error('Server error');
-
-                delete articles[id];
-
-                if (card) {
-                    card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                    card.style.opacity = '0';
-                    card.style.transform = 'scale(0.95)';
-                    setTimeout(() => card.remove(), 300);
-                }
-            } catch (err) {
-                console.error(err);
+        } catch (err) {
+            if (err.message && err.message.includes('401')) {
+                alert('Session expired. Please log in again.');
+                sessionStorage.removeItem(MOD_STORAGE_KEY);
+                document.body.classList.remove('admin-mode');
+            } else {
                 alert('Could not delete resource. Check your connection.');
             }
-        });
-    }
+        }
+    });
+}
 
     
     // Helpline search functionality

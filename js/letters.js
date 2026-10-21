@@ -2,8 +2,7 @@
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('📝 Letters page loaded, initializing...');
 
-    const ADMIN_PASSWORD = 'h0p3LeonhardEuler-360';
-    const ADMIN_STORAGE_KEY = 'hope_admin_session';
+   const MOD_STORAGE_KEY = 'hope_mod_password';
         
     const letterForm = document.getElementById('letter-form');
     const lettersFeed = document.getElementById('letters-feed');
@@ -228,7 +227,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // MODERATOR MODE
 // ===========================================
 
-function initializeModeratorMode() {
+async function initializeModeratorMode() {
     const adminToggle = document.getElementById('admin-toggle');
     const adminModal = document.getElementById('admin-modal');
     const adminLoginBtn = document.getElementById('admin-login-btn');
@@ -238,8 +237,8 @@ function initializeModeratorMode() {
 
     if (!adminToggle || !adminModal) return;
 
-    // Restore session
-    if (localStorage.getItem(ADMIN_STORAGE_KEY) === 'yes') {
+    // Restore session from sessionStorage (per-tab)
+    if (sessionStorage.getItem(MOD_STORAGE_KEY)) {
         document.body.classList.add('admin-mode');
     }
 
@@ -256,16 +255,30 @@ function initializeModeratorMode() {
         setTimeout(() => adminPassword.focus(), 100);
     });
 
-    function tryLogin() {
-        if (adminPassword.value === ADMIN_PASSWORD) {
-            localStorage.setItem(ADMIN_STORAGE_KEY, 'yes');
-            document.body.classList.add('admin-mode');
-            adminModal.classList.remove('open');
-            document.body.style.overflow = '';
-        } else {
-            adminError.textContent = 'Incorrect password. Try again.';
-            adminPassword.value = '';
-            adminPassword.focus();
+    async function tryLogin() {
+        const pw = adminPassword.value;
+        if (!pw) return;
+
+        adminLoginBtn.disabled = true;
+        adminLoginBtn.textContent = 'Checking…';
+
+        try {
+            const result = await api.verifyModPassword(pw);
+            if (result && result.ok) {
+                sessionStorage.setItem(MOD_STORAGE_KEY, pw);
+                document.body.classList.add('admin-mode');
+                adminModal.classList.remove('open');
+                document.body.style.overflow = '';
+            } else {
+                adminError.textContent = 'Incorrect password.';
+                adminPassword.value = '';
+                adminPassword.focus();
+            }
+        } catch (err) {
+            adminError.textContent = 'Could not verify. Try again.';
+        } finally {
+            adminLoginBtn.disabled = false;
+            adminLoginBtn.textContent = 'Log in';
         }
     }
 
@@ -275,11 +288,10 @@ function initializeModeratorMode() {
     });
 
     adminLogout.addEventListener('click', function () {
-        localStorage.removeItem(ADMIN_STORAGE_KEY);
+        sessionStorage.removeItem(MOD_STORAGE_KEY);
         document.body.classList.remove('admin-mode');
     });
 
-    // Close modal on X or backdrop click or Escape
     document.querySelectorAll('#admin-modal [data-close]').forEach(el => {
         el.addEventListener('click', () => {
             adminModal.classList.remove('open');
@@ -308,26 +320,37 @@ function initializeDeleteButtons() {
 
         const id = btn.getAttribute('data-delete-letter');
         const card = btn.closest('.letter-card');
-        if (!id) return;
+        const password = sessionStorage.getItem(MOD_STORAGE_KEY);
 
+        if (!password) {
+            alert('Session expired. Please log in again.');
+            document.body.classList.remove('admin-mode');
+            return;
+        }
+
+        if (!id) return;
         if (!confirm('Delete this letter? This cannot be undone.')) return;
 
         try {
-            const res = await api.deleteLetter(id);
+            const res = await api.deleteLetter(id, password);
             if (card) {
                 card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                 card.style.opacity = '0';
                 card.style.transform = 'scale(0.95)';
                 setTimeout(() => card.remove(), 300);
             }
-            // Update the counter in the heading
             const feedHeading = document.querySelector('.feed-header h2');
             if (feedHeading && typeof res.remaining === 'number') {
                 feedHeading.textContent = `Letters of Hope (${res.remaining.toLocaleString()})`;
             }
         } catch (err) {
-            console.error(err);
-            alert('Could not delete letter. Check your connection.');
+            if (err.message && err.message.includes('401')) {
+                alert('Session expired. Please log in again.');
+                sessionStorage.removeItem(MOD_STORAGE_KEY);
+                document.body.classList.remove('admin-mode');
+            } else {
+                alert('Could not delete letter. Check your connection.');
+            }
         }
     });
 }

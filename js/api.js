@@ -120,32 +120,13 @@ class HopeAPI {
     });
   }
 
-  async deleteLetter(id) {
-    return await this.request(`/api/letters/${id}`, {
-        method: 'DELETE'
-    });
-}
-
   // RESOURCES
  
   async getResources(tag = 'all') {
     const query = tag !== 'all' ? `?tag=${tag}` : '';
     return await this.request(`/api/resources${query}`);
   }
-
-  async addResource(resourceData) {
-    return await this.request('/api/resources', {
-      method: 'POST',
-      body: JSON.stringify(resourceData)
-    });
-  }
-
-  async deleteResource(id) {
-    return await this.request(`/api/resources/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
+  
   // DEBUG
  
   async debugBackend() {
@@ -158,6 +139,40 @@ class HopeAPI {
       return null;
     }
   }
+  async verifyModPassword(password) {
+    return await this.request('/api/auth/mod', {
+        method: 'POST',
+        body: JSON.stringify({ password })
+    });
+  }
+async deleteLetter(id, password) {
+    return await this.request(`/api/letters/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Mod-Password': password }
+    });
 }
+
+async deleteResource(id, password) {
+    return await this.request(`/api/resources/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Mod-Password': password }
+    });
+}
+
+async addResource(resourceData, password) {
+    return await this.request('/api/resources', {
+        method: 'POST',
+        body: JSON.stringify(resourceData),
+        headers: { 'X-Mod-Password': password }
+    });
+}
+async deleteBoard(id, password) {
+    return await this.request(`/api/boards/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Mod-Password': password }
+    });
+}
+}
+
 const api = new HopeAPI();
 window.api = api;
