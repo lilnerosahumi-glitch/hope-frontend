@@ -662,3 +662,45 @@ body {
     margin: 0;
     box-sizing: border-box;
 }
+
+.announcements-link {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 3rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.announcements-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.announcements-link .announcements-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.announcements-link .announcements-text h2 {
+    font-size: 1.4rem;
+    color: #FFC0CB;
+    font-family: 'Merriweather', serif;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.announcements-link .announcements-text p {
+    color: #777;
+    margin: 0;
+    font-size: 0.95rem;
+}
